@@ -386,6 +386,7 @@ export default function App() {
   // Snackbar
   const [snackMsg, setSnackMsg]   = useState(null);
   const [snackType, setSnackType] = useState('success');
+  const [snackPos, setSnackPos]   = useState('left'); // 'left' | 'right'
 
   // Menus
   const [domainA, setDomainA] = useState(null);
@@ -421,7 +422,7 @@ export default function App() {
     return () => ids.forEach(clearTimeout);
   }, [phase]); // eslint-disable-line
 
-  const snack = (msg, type = 'success') => { setSnackMsg(msg); setSnackType(type); };
+  const snack = (msg, type = 'success', pos = 'left') => { setSnackMsg(msg); setSnackType(type); setSnackPos(pos); };
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleTranslate = () => {
@@ -513,7 +514,7 @@ export default function App() {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(isRagResult ? RAG_RESULT : SPEED_DRAFT).catch(() => {});
-    snack('Translation copied.', 'success');
+    snack('Translation copied to clipboard.', 'success', 'right');
   };
 
   // ── Derived ──────────────────────────────────────────────────────────────────
@@ -586,7 +587,7 @@ export default function App() {
             </Tooltip>
 
             <Menu anchorEl={avatarA} open={Boolean(avatarA)} onClose={() => setAvatarA(null)}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              anchorOrigin={{ vertical: 'bottom', horizontal: snackPos }}
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
               sx={{ mt: 0.75 }} PaperProps={{ sx: { minWidth: 210 } }}>
               <Box sx={{ px: 2, py: 1.5 }}>
@@ -622,9 +623,9 @@ export default function App() {
             '& .Mui-selected': { color: '#27336F !important' },
             '& .MuiTabs-indicator': { bgcolor: '#27336F', height: 2 },
           }}>
-            <Tab icon={<DsTranslateIcon size={18} sx={{ color: 'currentColor' }} />} iconPosition="start"
-              label="Quick translation" />
-            <Tab icon={<ArticleOutlinedIcon sx={{ fontSize: 16 }} />} iconPosition="start"
+            <Tab icon={<DsTranslateIcon size={18} sx={{ color: 'currentColor', mr: 0.75 }} />} iconPosition="start"
+              label="Text translation" />
+            <Tab icon={<ArticleOutlinedIcon sx={{ fontSize: 16, mr: 0.75 }} />} iconPosition="start"
               label="File translation" />
           </Tabs>
           <Box sx={{ flex: 1 }} />
@@ -834,7 +835,15 @@ export default function App() {
                 {/* Bottom row: chip + copy icon — visible during result AND rag loading */}
                 <Box sx={{ px: '20px', pb: '14px', pt: '6px',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  {hasResult
+                  {phase === 'rag_translating' && prevTranslation
+                    ? <Box sx={{
+                        bgcolor: blue[500], color: '#fff',
+                        fontWeight: 600, fontSize: '0.75rem',
+                        letterSpacing: '0.4px', lineHeight: 1.3,
+                        px: '8px', py: '4px', borderRadius: '4px',
+                        display: 'inline-flex', alignItems: 'center', flexShrink: 0,
+                      }}>Refining</Box>
+                    : hasResult
                     ? (isRagResult
                         ? <Box sx={{
                             bgcolor: green[600], color: '#fff',
@@ -851,7 +860,7 @@ export default function App() {
                               letterSpacing: '0.4px', lineHeight: 1.3,
                               px: '8px', py: '4px', borderRadius: '4px',
                               display: 'inline-flex', alignItems: 'center', flexShrink: 0,
-                            }}>Speed draft</Box>
+                            }}>Quick translation</Box>
                             {ragEverTried && (
                               <Button variant="text" size="small" onClick={handleTryIt}
                                 sx={{
@@ -860,7 +869,7 @@ export default function App() {
                                   letterSpacing: '0.15px', lineHeight: 1.3,
                                   '&:hover': { bgcolor: 'transparent', color: blue[600], textDecoration: 'underline' },
                                 }}>
-                                Retranslate with company language
+                                Refine with your company language
                               </Button>
                             )}
                           </Box>
@@ -986,6 +995,9 @@ export default function App() {
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.65 }}>
               Best for policy, legal, and public-facing content where terminology matters.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.65 }}>
+              Translates using your organization's approved glossary, style guide, and reference documents. Turn it off anytime.
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1,
               bgcolor: blue[50], border: `1px solid ${blue[200]}`, borderRadius: 1.5, p: 1.5 }}>
