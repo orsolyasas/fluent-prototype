@@ -586,7 +586,7 @@ export default function App() {
       <style>{`
         textarea.fs-ta::placeholder { color: ${placeholderColor}; }
         textarea.fs-ta:focus { outline: none; }
-        .fluent-source-panel:focus-within { border-color: ${blue[400]} !important; box-shadow: 0px 2px 8px 0px rgba(23,140,246,0.15) !important; }
+        .fluent-source-panel:focus-within { border: 2px solid ${blue[500]} !important; box-shadow: none !important; }
       `}</style>
 
       <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -751,7 +751,7 @@ export default function App() {
 
             {/* ── Source column ── */}
             <Box sx={{ flex: '1 1 400px', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-              <Paper elevation={0} sx={{
+              <Paper elevation={0} className="fluent-source-panel" sx={{
                 position: 'relative',
                 border: '0.8px solid rgba(59,55,81,0.18)',
                 bgcolor: '#FAFAFD',
