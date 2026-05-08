@@ -180,7 +180,7 @@ function DropChip({ value, anchor, setAnchor, options, onChange }) {
 }
 
 // ── Language selector — beta style: search + multi-column grid ────────────────
-function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder }) {
+function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder, containerRef }) {
   const [search, setSearch] = React.useState('');
   const filtered = search
     ? options.filter(l => l.toLowerCase().includes(search.toLowerCase()))
@@ -205,13 +205,14 @@ function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder }) {
       </Button>
       <Popover
         open={open}
-        anchorEl={anchor}
+        anchorEl={containerRef ? containerRef.current : anchor}
         onClose={handleClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         transformOrigin={{ vertical: 'top', horizontal: 'center' }}
         PaperProps={{
           sx: {
-            mt: 0.5, width: '90vw', maxWidth: 1400,
+            mt: 0.5,
+            width: containerRef?.current ? containerRef.current.offsetWidth : '90vw',
             border: `1px solid ${blueGray[200]}`,
             borderRadius: '4px',
             boxShadow: '0px 8px 24px rgba(0,0,0,0.12)',
@@ -364,6 +365,7 @@ export default function App() {
   // Source text
   const [sourceText, setSourceText] = useState(SOURCE_TEXT);
   const taRef = useRef(null);
+  const langBarRef = useRef(null);
 
   // RAG flags
   const [ragEnabled, setRagEnabled]         = useState(false);
@@ -641,7 +643,7 @@ export default function App() {
           bgcolor: 'background.default', maxWidth: 1400, width: '100%', mx: 'auto' }}>
 
           {/* Language bar — swap icon exactly at center */}
-          <Box sx={{
+          <Box ref={langBarRef} sx={{
             bgcolor: 'background.default',
             px: { xs: 2, sm: 3, md: 4 },
             py: 2,
@@ -650,7 +652,7 @@ export default function App() {
             {/* Source half — right-aligned so button sits just left of center */}
             <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
               <LangBtn value={sourceLang} anchor={srcA} setAnchor={setSrcA}
-                options={SOURCE_LANGS} onChange={setSourceLang} />
+                options={SOURCE_LANGS} onChange={setSourceLang} containerRef={langBarRef} placeholder='Search for source language' />
             </Box>
             {/* Swap — exactly at center point */}
             <Tooltip title="Swap languages">
@@ -663,7 +665,7 @@ export default function App() {
             {/* Target half — left-aligned so button sits just right of center */}
             <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
               <LangBtn value={targetLang} anchor={tgtA} setAnchor={setTgtA}
-                options={TARGET_LANGS} onChange={setTargetLang} />
+                options={TARGET_LANGS} onChange={setTargetLang} containerRef={langBarRef} placeholder='Search for target language' />
             </Box>
           </Box>
 
