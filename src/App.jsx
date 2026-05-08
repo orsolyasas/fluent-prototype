@@ -432,7 +432,7 @@ export default function App() {
     else setPrevTranslation('');
     if (ragEnabled) {
       if (!ragDialogShown) { setPendingRag(true); setShowRagDialog(true); }
-      else setPhase('rag_translating');
+      else { setRagStep(0); setPhase('rag_translating'); }
     } else {
       setOfferDismissed(false);
       setPhase('translating_speed');
@@ -444,7 +444,7 @@ export default function App() {
   const handleDialogOk = () => {
     setShowRagDialog(false);
     setRagDialogShown(true);
-    if (pendingRag) { setPendingRag(false); setPhase('rag_translating'); }
+    if (pendingRag) { setPendingRag(false); setRagStep(0); setPhase('rag_translating'); }
   };
 
   const handleRagCheck = (checked) => {
@@ -470,7 +470,7 @@ export default function App() {
     setRagTrialMode(true); // this is a trial — "Keep using?" banner will appear
     setRagDialogShown(true);
     setOfferDismissed(true);
-    setPhase('rag_translating');
+    setRagStep(0); setPhase('rag_translating');
   };
 
   const handleKeepUsing = () => {
