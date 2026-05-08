@@ -1009,7 +1009,7 @@ export default function App() {
               Best for policy, legal, and public-facing content where terminology matters.
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.65 }}>
-              Translates using your organization's approved glossary, style guide, and reference documents. You can turn it off anytime.
+              You can turn it off anytime.
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5,
               bgcolor: blue[50], border: `1px solid ${blue[200]}`, borderRadius: '4px', p: 1.5 }}>
