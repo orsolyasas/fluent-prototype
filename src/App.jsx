@@ -5,7 +5,7 @@ import {
   Chip, Button, IconButton, Tooltip, Paper,
   Checkbox, FormControlLabel, Dialog, DialogContent, DialogActions,
   Menu, MenuItem, Snackbar, Alert, CircularProgress, LinearProgress, Skeleton, Divider,
-  TextField, InputAdornment, Popover,
+  TextField, InputAdornment, Popover, RadioGroup, FormControl, FormLabel, Radio as MuiRadio, FormControlLabel as MuiFormControlLabel, Select, InputLabel,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -24,6 +24,7 @@ import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutlined';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import SearchIcon from '@mui/icons-material/Search';
+import SettingsOutlined2Icon from '@mui/icons-material/Settings';
 import QuickreplyOutlinedIcon from '@mui/icons-material/QuickreplyOutlined';
 
 // ── memoQ DS Color Tokens ─────────────────────────────────────────────────────
@@ -99,8 +100,10 @@ const ALL_SOURCE_LANGS = [
 const ALL_TARGET_LANGS = ALL_SOURCE_LANGS.filter(l => l !== 'Autodetect language');
 const SOURCE_LANGS = ALL_SOURCE_LANGS; // kept for compatibility
 const TARGET_LANGS = ALL_TARGET_LANGS; // kept for compatibility
-const DOMAINS = ['Match source', 'General', 'Marketing', 'Legal', 'Technical', 'Medical'];
-const TONES   = ['Informal', 'Formal', 'Neutral'];
+const DOMAINS = ['Match source', 'Legal', 'Technical', 'Medical', 'Marketing', 'Custom'];
+const DOMAIN_OPTIONS = ['Match source', 'Legal', 'Technical', 'Medical', 'Marketing', 'Custom'];
+const TONES = ['Informal', 'Formal', 'Neutral', 'Custom'];
+const TONE_OPTIONS   = ['Informal', 'Formal', 'Neutral', 'Custom'];
 const RAG_STEPS = ['Translating…', 'Checking glossary and reference files…', 'Adapting tone…', "We're almost done…"];
 const RAG_STEP_MS = [1200, 1500, 1500, 1100];
 const RAG_PROGRESS = [0, 25, 75, 95]; // progress % per step — starts at 0
@@ -403,6 +406,11 @@ export default function App() {
   // Menus
   const [domainA, setDomainA] = useState(null);
   const [toneA,   setToneA]   = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [tempDomain, setTempDomain]     = useState('Match source');
+  const [tempTone, setTempTone]         = useState('Informal');
+  const [domainCustom, setDomainCustom] = useState('');
+  const [toneCustom, setToneCustom]     = useState('');
   const [srcA,    setSrcA]    = useState(null);
   const [tgtA,    setTgtA]    = useState(null);
   const [avatarA, setAvatarA] = useState(null);
@@ -435,6 +443,28 @@ export default function App() {
   }, [phase]); // eslint-disable-line
 
   const snack = (msg, type = 'success', pos = 'left') => { setSnackMsg(msg); setSnackType(type); setSnackPos(pos); };
+
+  const openSettings = () => {
+    setTempDomain(domain);
+    setTempTone(tone);
+    setDomainCustom(domain === 'Custom' || !DOMAIN_OPTIONS.includes(domain) ? domain : '');
+    setToneCustom(tone === 'Custom' || !TONE_OPTIONS.includes(tone) ? tone : '');
+    setShowSettings(true);
+  };
+
+  const applySettings = () => {
+    const newDomain = tempDomain === 'Custom' ? domainCustom.trim() : tempDomain;
+    const newTone   = tempTone   === 'Custom' ? toneCustom.trim()   : tempTone;
+    setDomain(newDomain);
+    setTone(newTone);
+    setShowSettings(false);
+  };
+
+  const settingsValid = () => {
+    const domainOk = tempDomain !== 'Custom' || (domainCustom.trim().length >= 3 && domainCustom.length <= 32);
+    const toneOk   = tempTone   !== 'Custom' || (toneCustom.trim().length >= 3   && toneCustom.length   <= 32);
+    return domainOk && toneOk;
+  };
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleTranslate = () => {
@@ -641,13 +671,28 @@ export default function App() {
               label="File translation" />
           </Tabs>
           <Box sx={{ flex: 1 }} />
+          {/* Settings button — opens Domain/Tone dialog */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mr: 1 }}>
             <Typography variant="caption" color="text.secondary">Domain:</Typography>
-            <DropChip value={domain} anchor={domainA} setAnchor={setDomainA}
-              options={DOMAINS} onChange={setDomain} />
+            <Box onClick={openSettings} sx={{
+              bgcolor: blue[500], color: '#fff', height: 24, fontSize: '0.75rem',
+              cursor: 'pointer', borderRadius: '4px', fontWeight: 600,
+              px: '8px', display: 'inline-flex', alignItems: 'center',
+              letterSpacing: '0.4px', lineHeight: 1.3,
+              '&:hover': { bgcolor: blue[600] }, userSelect: 'none',
+            }}>
+              {domain}
+            </Box>
             <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>Tone:</Typography>
-            <DropChip value={tone} anchor={toneA} setAnchor={setToneA}
-              options={TONES} onChange={setTone} />
+            <Box onClick={openSettings} sx={{
+              bgcolor: blue[500], color: '#fff', height: 24, fontSize: '0.75rem',
+              cursor: 'pointer', borderRadius: '4px', fontWeight: 600,
+              px: '8px', display: 'inline-flex', alignItems: 'center',
+              letterSpacing: '0.4px', lineHeight: 1.3,
+              '&:hover': { bgcolor: blue[600] }, userSelect: 'none',
+            }}>
+              {tone}
+            </Box>
           </Box>
           </Box>
         </Box>
@@ -991,6 +1036,105 @@ export default function App() {
             © 2026 Fluent by Language Intelligence
           </Typography>
         </Box>
+
+        {/* ══ Settings dialog ═══════════════════════════════════════════════════ */}
+        <Dialog open={showSettings} onClose={() => setShowSettings(false)} maxWidth="xs" fullWidth
+          PaperProps={{ sx: { borderRadius: '4px' } }}>
+          <DialogContent sx={{ pt: 0, px: 0, pb: 0 }}>
+            {/* Header */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              px: 3, pt: 2.5, pb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.125rem' }}>Settings</Typography>
+              <IconButton size="small" onClick={() => setShowSettings(false)}
+                sx={{ color: blueGray[500] }}>
+                <CloseIcon sx={{ fontSize: 20 }} />
+              </IconButton>
+            </Box>
+            <Divider />
+
+            <Box sx={{ px: 3, pt: 2.5, pb: 1 }}>
+              {/* ── Domain section ── */}
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
+                Domain
+              </Typography>
+              <Select
+                fullWidth size="small"
+                value={tempDomain}
+                onChange={e => setTempDomain(e.target.value)}
+                sx={{ borderRadius: '4px' }}
+              >
+                {DOMAIN_OPTIONS.map(opt => (
+                  <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                ))}
+              </Select>
+              {tempDomain === 'Custom' && (
+                <Box sx={{ mt: 1.5, mb: 1 }}>
+                  <TextField
+                    autoFocus
+                    fullWidth size="small"
+                    value={domainCustom}
+                    onChange={e => setDomainCustom(e.target.value)}
+                    placeholder="Define the domain you would like to use"
+                    inputProps={{ maxLength: 64 }}
+                    error={domainCustom.length > 32}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '4px' } }}
+                  />
+                  <Typography variant="caption"
+                    sx={{ color: domainCustom.length > 32 ? 'error.main' : blueGray[500], mt: 0.5, display: 'block' }}>
+                    {Math.max(0, 32 - domainCustom.length)} characters left.
+                  </Typography>
+                </Box>
+              )}
+
+              <Divider sx={{ my: 2.5 }} />
+
+              {/* ── Tone of voice section ── */}
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
+                Tone of voice
+              </Typography>
+              <Select
+                fullWidth size="small"
+                value={tempTone}
+                onChange={e => setTempTone(e.target.value)}
+                sx={{ borderRadius: '4px' }}
+              >
+                {TONE_OPTIONS.map(opt => (
+                  <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                ))}
+              </Select>
+              {tempTone === 'Custom' && (
+                <Box sx={{ mt: 1.5, mb: 1 }}>
+                  <TextField
+                    autoFocus
+                    fullWidth size="small"
+                    value={toneCustom}
+                    onChange={e => setToneCustom(e.target.value)}
+                    placeholder="Define the tone of voice you would like to use"
+                    inputProps={{ maxLength: 64 }}
+                    error={toneCustom.length > 32}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '4px' } }}
+                  />
+                  <Typography variant="caption"
+                    sx={{ color: toneCustom.length > 32 ? 'error.main' : blueGray[500], mt: 0.5, display: 'block' }}>
+                    {Math.max(0, 32 - toneCustom.length)} characters left.
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, py: 2, bgcolor: blueGray[50], borderTop: `1px solid ${blueGray[100]}` }}>
+            <Button variant="text" onClick={() => setShowSettings(false)}
+              sx={{ color: blue[500], fontWeight: 600, textTransform: 'none' }}>
+              Cancel
+            </Button>
+            <Button variant="contained" disabled={!settingsValid()} onClick={applySettings}
+              sx={{ bgcolor: '#27336F', color: '#fff', borderRadius: 20, px: 3,
+                '&:hover': { bgcolor: '#1F2A5E' },
+                '&.Mui-disabled': { bgcolor: blueGray[200], color: blueGray[400] } }}>
+              Apply
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {/* ══ RAG first-time dialog ════════════════════════════════════════════ */}
         <Dialog open={showRagDialog} maxWidth="xs" fullWidth
