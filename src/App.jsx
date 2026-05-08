@@ -877,7 +877,7 @@ export default function App() {
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box
               component="img"
-              src={darkMode ? '/logo-dark.svg' : '/logo-light.svg'}
+              src={`${import.meta.env.BASE_URL}${darkMode ? 'logo-dark.svg' : 'logo-light.svg'}`}
               alt="Language Intelligence"
               sx={{ height: 28 }}
             />
