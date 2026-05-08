@@ -911,7 +911,7 @@ export default function App() {
                   p: 2, bgcolor: blue[50], border: `1px solid ${blue[200]}`, borderRadius: '4px' }}>
                   <AutoAwesomeIcon sx={{ color: blue[500], fontSize: 18, mt: '2px', flexShrink: 0 }} />
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="body2" fontWeight={700} color="text.primary">
+                    <Typography variant="body2" color="text.primary" sx={{ fontWeight: 700 }}>
                       Need to match your company's language?
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
@@ -931,7 +931,7 @@ export default function App() {
                   p: 2, bgcolor: blue[50], border: `1px solid ${blue[200]}`, borderRadius: '4px' }}>
                   <AutoAwesomeIcon sx={{ color: blue[500], fontSize: 18, mt: '2px', flexShrink: 0 }} />
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="body2" fontWeight={700} color="text.primary">
+                    <Typography variant="body2" color="text.primary" sx={{ fontWeight: 700 }}>
                       Keep future translations consistent with company language?
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
