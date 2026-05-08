@@ -103,7 +103,7 @@ const DOMAINS = ['Match source', 'General', 'Marketing', 'Legal', 'Technical', '
 const TONES   = ['Informal', 'Formal', 'Neutral'];
 const RAG_STEPS = ['Translating…', 'Checking glossary and reference files…', 'Adapting tone…', "We're almost done…"];
 const RAG_STEP_MS = [1200, 1500, 1500, 1100];
-const RAG_PROGRESS = [5, 25, 75, 95]; // progress % per step
+const RAG_PROGRESS = [0, 25, 75, 95]; // progress % per step — starts at 0
 
 // ── Theme factory ─────────────────────────────────────────────────────────────
 function makeTheme(dark) {
@@ -374,6 +374,7 @@ export default function App() {
   const [pendingRag, setPendingRag]         = useState(false);
   const [offerDismissed, setOfferDismissed] = useState(false);
   const [ragConfirmed, setRagConfirmed]     = useState(false);
+  const [ragTrialMode, setRagTrialMode]     = useState(false); // true only when triggered via "Try it"
   const [ragEverTried, setRagEverTried]     = useState(false); // true after first RAG translation
   const [prevTranslation, setPrevTranslation] = useState(''); // faded bg during retranslation
   const [sampleIdx, setSampleIdx]             = useState(0);   // current sample index
@@ -425,6 +426,7 @@ export default function App() {
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleTranslate = () => {
     if (!sourceText.trim()) return;
+    setRagTrialMode(false); // direct translate is never a trial
     // Save current translation as faded background for retranslation
     if (hasResult) setPrevTranslation(translation);
     else setPrevTranslation('');
@@ -465,7 +467,7 @@ export default function App() {
 
   const handleTryIt = () => {
     if (hasResult) setPrevTranslation(translation);
-    // Trial run: checkbox stays OFF, just runs RAG once as a preview
+    setRagTrialMode(true); // this is a trial — "Keep using?" banner will appear
     setRagDialogShown(true);
     setOfferDismissed(true);
     setPhase('rag_translating');
@@ -473,12 +475,14 @@ export default function App() {
 
   const handleKeepUsing = () => {
     setRagConfirmed(true);
+    setRagTrialMode(false);
     setRagEnabled(true); // NOW turn on the checkbox
     setPhase('result_rag');
     snack("You're now using company language in translations.", 'success');
   };
 
   const handleNotNow = () => {
+    setRagTrialMode(false);
     // Keep RAG result visible — just dismiss the banner, don't revert to speed draft
     setPhase('result_rag'); // stays on RAG result, banner disappears
     snack("You're no longer using company language in translations.", 'info');
@@ -520,7 +524,7 @@ export default function App() {
   const hasResult      = isSpeedResult || isRagResult;
   const canTranslate   = sourceText.trim().length > 0 && !isTranslating;
   const showOffer      = isSpeedResult && !ragEnabled && !ragEverTried; // hide permanently once RAG tried
-  const showKeepUsing  = phase === 'result_rag_first';
+  const showKeepUsing  = phase === 'result_rag_first' && ragTrialMode;
   const currentSample = SAMPLE_POOL[sampleIdx] || SAMPLE_POOL[0];
   const translation    = isRagResult ? currentSample.rag : currentSample.speedDraft;
   const H = 56, SN = 52;
@@ -758,7 +762,7 @@ export default function App() {
                 />
                 <Box sx={{ flex: 1 }} />
                 {isTranslating
-                  ? <Button variant="outlined" onClick={handleCancel}
+                  ? <Button variant="outlined" size="large" onClick={handleCancel}
                       startIcon={
                         <CircularProgress size={15} thickness={4}
                           sx={{ color: blueGray[600] }} />
@@ -770,7 +774,7 @@ export default function App() {
                       }}>
                       Cancel
                     </Button>
-                  : <Button variant="contained" disabled={!canTranslate} onClick={handleTranslate}
+                  : <Button variant="contained" size="large" disabled={!canTranslate} onClick={handleTranslate}
                       sx={{ borderRadius: 20, px: 3, fontWeight: 700,
                         bgcolor: '#27336F', color: '#fff',
                         '&:hover': { bgcolor: '#1F2A5E' },
@@ -876,11 +880,13 @@ export default function App() {
                 </Box>
               </Paper>
 
-              {/* ── RAG progress bar — 16px below panel, Figma design ── */}
+
+
+              {/* ── RAG progress bar — centered with Translate button ── */}
               {phase === 'rag_translating' && (
-                <Box sx={{ mt: '16px', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ mt: '27px', display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <Typography variant="caption" fontWeight={600}
-                    sx={{ color: 'text.primary', whiteSpace: 'nowrap', minWidth: 0, flex: '0 1 auto' }}>
+                    sx={{ color: 'text.primary', whiteSpace: 'nowrap', flexShrink: 0 }}>
                     {RAG_STEPS[ragStep]}
                   </Typography>
                   <LinearProgress
@@ -889,7 +895,7 @@ export default function App() {
                     sx={{
                       flex: 1, height: 4, borderRadius: 2,
                       bgcolor: blueGray[200],
-                      '& .MuiLinearProgress-bar': { bgcolor: blue[500], borderRadius: 2 },
+                      '& .MuiLinearProgress-bar': { bgcolor: blue[500], borderRadius: 2, transition: 'transform 0.8s ease' },
                     }}
                   />
                   <Typography variant="caption" fontWeight={600}
@@ -917,12 +923,6 @@ export default function App() {
                       '&:hover': { borderColor: blue[500], bgcolor: blue[50] } }}>
                     Try it
                   </Button>
-                  <Tooltip title="Dismiss">
-                    <IconButton size="small" onClick={() => setOfferDismissed(true)}
-                      sx={{ color: blueGray[400], flexShrink: 0 }}>
-                      <CloseIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  </Tooltip>
                 </Box>
               )}
 
