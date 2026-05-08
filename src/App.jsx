@@ -102,8 +102,8 @@ const SOURCE_LANGS = ALL_SOURCE_LANGS; // kept for compatibility
 const TARGET_LANGS = ALL_TARGET_LANGS; // kept for compatibility
 const DOMAINS = ['Match source', 'Legal', 'Technical', 'Medical', 'Marketing', 'Custom'];
 const DOMAIN_OPTIONS = ['Match source', 'Legal', 'Technical', 'Medical', 'Marketing', 'Custom'];
-const TONES = ['Informal', 'Formal', 'Neutral', 'Custom'];
-const TONE_OPTIONS   = ['Informal', 'Formal', 'Neutral', 'Custom'];
+const TONES = ['Match source', 'Formal', 'Informal', 'Custom'];
+const TONE_OPTIONS   = ['Match source', 'Formal', 'Informal', 'Custom'];
 const RAG_STEPS = ['Translating…', 'Checking glossary and reference files…', 'Adapting tone…', "We're almost done…"];
 const RAG_STEP_MS = [1200, 1500, 1500, 1100];
 const RAG_PROGRESS = [0, 25, 75, 95]; // progress % per step — starts at 0
@@ -131,6 +131,8 @@ function makeTheme(dark) {
     shape: { borderRadius: 8 },
     components: {
       MuiButton:   { styleOverrides: { root: { textTransform: 'none', fontWeight: 600 } } },
+      MuiOutlinedInput: { defaultProps: { color: 'secondary' } },
+      MuiSelect:        { defaultProps: { color: 'secondary' } },
       MuiTab:      { styleOverrides: { root: { textTransform: 'none', fontWeight: 600 } } },
       MuiAppBar:   { styleOverrides: { root: { boxShadow: 'none' } } },
       MuiChip:     { styleOverrides: { root: { fontWeight: 600 } } },
@@ -375,7 +377,7 @@ export default function App() {
   const [sourceLang, setSourceLang] = useState('English (United States)');
   const [targetLang, setTargetLang] = useState('Hungarian');
   const [domain, setDomain]         = useState('Match source');
-  const [tone, setTone]             = useState('Informal');
+  const [tone, setTone]             = useState('Match source');
 
   // Source text
   const [sourceText, setSourceText] = useState(SOURCE_TEXT);
@@ -408,7 +410,7 @@ export default function App() {
   const [toneA,   setToneA]   = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [tempDomain, setTempDomain]     = useState('Match source');
-  const [tempTone, setTempTone]         = useState('Informal');
+  const [tempTone, setTempTone]         = useState('Match source');
   const [domainCustom, setDomainCustom] = useState('');
   const [toneCustom, setToneCustom]     = useState('');
   const [srcA,    setSrcA]    = useState(null);
@@ -445,10 +447,12 @@ export default function App() {
   const snack = (msg, type = 'success', pos = 'left') => { setSnackMsg(msg); setSnackType(type); setSnackPos(pos); };
 
   const openSettings = () => {
-    setTempDomain(domain);
-    setTempTone(tone);
-    setDomainCustom(domain === 'Custom' || !DOMAIN_OPTIONS.includes(domain) ? domain : '');
-    setToneCustom(tone === 'Custom' || !TONE_OPTIONS.includes(tone) ? tone : '');
+    const domainIsCustom = !DOMAIN_OPTIONS.filter(o => o !== 'Custom').includes(domain);
+    const toneIsCustom   = !TONE_OPTIONS.filter(o => o !== 'Custom').includes(tone);
+    setTempDomain(domainIsCustom ? 'Custom' : domain);
+    setTempTone(toneIsCustom ? 'Custom' : tone);
+    setDomainCustom(domainIsCustom ? domain : '');
+    setToneCustom(toneIsCustom ? tone : '');
     setShowSettings(true);
   };
 
@@ -579,7 +583,11 @@ export default function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       {/* Inject placeholder color */}
-      <style>{`textarea.fs-ta::placeholder { color: ${placeholderColor}; }`}</style>
+      <style>{`
+        textarea.fs-ta::placeholder { color: ${placeholderColor}; }
+        textarea.fs-ta:focus { outline: none; }
+        .fluent-source-panel:focus-within { border-color: ${blue[400]} !important; box-shadow: 0px 2px 8px 0px rgba(23,140,246,0.15) !important; }
+      `}</style>
 
       <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 
@@ -1058,7 +1066,7 @@ export default function App() {
                 Domain
               </Typography>
               <Select
-                fullWidth size="small"
+                fullWidth size="small" color="secondary"
                 value={tempDomain}
                 onChange={e => setTempDomain(e.target.value)}
                 sx={{ borderRadius: '4px' }}
@@ -1093,7 +1101,7 @@ export default function App() {
                 Tone of voice
               </Typography>
               <Select
-                fullWidth size="small"
+                fullWidth size="small" color="secondary"
                 value={tempTone}
                 onChange={e => setTempTone(e.target.value)}
                 sx={{ borderRadius: '4px' }}
