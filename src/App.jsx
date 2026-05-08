@@ -348,6 +348,18 @@ function DsTranslateIcon({ size = 20, sx = {} }) {
   );
 }
 
+function DsDocumentUploadIcon({ size = 20, sx = {} }) {
+  return (
+    <Box component="svg" width={size} height={size} viewBox="0 0 24 24" fill="none"
+      xmlns="http://www.w3.org/2000/svg" sx={{ flexShrink: 0, ...sx }}>
+      <path d="M12 9H4V11H12V9Z" fill="currentColor"/>
+      <path d="M10 13H4V15H10V13Z" fill="currentColor"/>
+      <path d="M16 6V11H18V4.586L13.414 0H2C0.897 0 0 0.898 0 2V20C0 21.103 0.897 22 2 22H12V20H2V2H12V6H16Z" fill="currentColor"/>
+      <path d="M19 14.585L14.293 19.292L15.707 20.706L18 18.413V24H20V18.413L22.293 20.706L23.707 19.292L19 14.585Z" fill="currentColor"/>
+    </Box>
+  );
+}
+
 // ── Main app ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [darkMode, setDarkMode]   = useState(false);
@@ -625,7 +637,7 @@ export default function App() {
           }}>
             <Tab icon={<DsTranslateIcon size={18} sx={{ color: 'currentColor', mr: 0.75 }} />} iconPosition="start"
               label="Text translation" />
-            <Tab icon={<ArticleOutlinedIcon sx={{ fontSize: 16, mr: 0.75 }} />} iconPosition="start"
+            <Tab icon={<DsDocumentUploadIcon size={18} sx={{ color: 'currentColor', mr: 0.75 }} />} iconPosition="start"
               label="File translation" />
           </Tabs>
           <Box sx={{ flex: 1 }} />
@@ -833,7 +845,7 @@ export default function App() {
                 {!isTranslating && !hasResult && <Box sx={{ flex: 1 }} />}
 
                 {/* Bottom row: chip + copy icon — visible during result AND rag loading */}
-                <Box sx={{ px: '20px', pb: '14px', pt: '6px',
+                <Box sx={{ px: '20px', pb: '14px', pt: '10px',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   {phase === 'rag_translating' && prevTranslation
                     ? <Box sx={{
