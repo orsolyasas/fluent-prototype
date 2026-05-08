@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ThemeProvider, CssBaseline, createTheme,
   AppBar, Toolbar, Box, Typography, Tabs, Tab,
   Chip, Button, IconButton, Tooltip, Paper,
   Checkbox, FormControlLabel, Dialog, DialogContent, DialogActions,
   Menu, MenuItem, Snackbar, Alert, CircularProgress, LinearProgress, Skeleton, Divider,
+  TextField, InputAdornment, Popover,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -22,6 +23,7 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutlined';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import SearchIcon from '@mui/icons-material/Search';
 import QuickreplyOutlinedIcon from '@mui/icons-material/QuickreplyOutlined';
 
 // ── memoQ DS Color Tokens ─────────────────────────────────────────────────────
@@ -82,8 +84,21 @@ const RAG_RESULT =
   'A Minisztérium elkötelezett a szövetségi keretrendszer implementációja során megvalósuló érdemi stakeholder-bevonás előmozdítása mellett. Ezúton közzétesszük a társadalmi egyeztetési tervet, és várjuk az írásos észrevételeket a második negyedév lezárultáig. A tárca tisztviselői két virtuális kerekasztal-konferenciát rendeznek a civil szféra képviselői számára, biztosítva a mindkét hivatalos nyelven elérhető szinkrontolmácsolást.';
 
 const CHAR_LIMIT  = 5000;
-const SOURCE_LANGS = ['English (United States)', 'Spanish (Spain)', 'French (France)', 'German (Germany)', 'Auto-detect'];
-const TARGET_LANGS = ['Hungarian', 'German (Germany)', 'English (United Kingdom)', 'French (France)', 'Spanish (Spain)'];
+const ALL_SOURCE_LANGS = [
+  'Autodetect language','Albanian','Albanian (Albania)','Arabic','Bosnian (Cyrillic)','Bosnian (Latin)',
+  'Bulgarian','Catalan','Chinese','Chinese (Simplified)','Chinese (Traditional)','Croatian','Czech',
+  'Danish','Dutch','English','English (Canada)','English (United Kingdom)','English (United States)',
+  'Estonian','Finnish','French','French (Canada)','French (France)','French (Switzerland)',
+  'German','German (Austria)','German (Germany)','German (Switzerland)','Greek','Haitian Creole',
+  'Hebrew','Hindi','Hungarian','Indonesian','Irish','Italian','Japanese','Korean','Latvian',
+  'Lithuanian','Macedonian','Norwegian','Norwegian (Bokmål)','Norwegian (Nynorsk)','Polish',
+  'Portuguese','Portuguese (Brazil)','Portuguese (Portugal)','Romanian','Russian',
+  'Serbian (Cyrillic)','Serbian (Latin)','Slovak','Slovenian','Spanish','Spanish (Argentina)',
+  'Spanish (Mexico)','Spanish (Spain)','Swedish','Thai','Turkish','Ukrainian','Vietnamese','Welsh',
+];
+const ALL_TARGET_LANGS = ALL_SOURCE_LANGS.filter(l => l !== 'Autodetect language');
+const SOURCE_LANGS = ALL_SOURCE_LANGS; // kept for compatibility
+const TARGET_LANGS = ALL_TARGET_LANGS; // kept for compatibility
 const DOMAINS = ['Match source', 'General', 'Marketing', 'Legal', 'Technical', 'Medical'];
 const TONES   = ['Informal', 'Formal', 'Neutral'];
 const RAG_STEPS = ['Translating…', 'Checking glossary and reference files…', 'Adapting tone…', "We're almost done…"];
@@ -164,33 +179,97 @@ function DropChip({ value, anchor, setAnchor, options, onChange }) {
   );
 }
 
-// ── Language selector button ───────────────────────────────────────────────────
-function LangBtn({ value, anchor, setAnchor, options, onChange }) {
+// ── Language selector — beta style: search + multi-column grid ────────────────
+function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder }) {
+  const [search, setSearch] = React.useState('');
+  const filtered = search
+    ? options.filter(l => l.toLowerCase().includes(search.toLowerCase()))
+    : options;
+  const open = Boolean(anchor);
+  const handleClose = () => { setAnchor(null); setSearch(''); };
+
   return (
     <>
       <Button size="small"
-        endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16, ml: '-2px' }} />}
+        endIcon={open
+          ? <KeyboardArrowDownIcon sx={{ fontSize: 16, ml: '-2px', transform: 'rotate(180deg)' }} />
+          : <KeyboardArrowDownIcon sx={{ fontSize: 16, ml: '-2px' }} />}
         onClick={(e) => setAnchor(e.currentTarget)}
         sx={{
-          color: blue[500], fontWeight: 600, fontSize: '0.875rem',
+          color: blue[500], fontWeight: 600, fontSize: '0.9375rem',
           textTransform: 'none', px: '12px', py: '10px',
           borderRadius: '100px', border: 'none', lineHeight: 1.2,
           '&:hover': { bgcolor: blue[50], color: blue[600] },
         }}>
         {value}
       </Button>
-      <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        sx={{ mt: 0.5 }}>
-        {options.map(l => (
-          <MenuItem key={l} selected={l === value}
-            onClick={() => { onChange(l); setAnchor(null); }}
-            sx={{ minWidth: 220 }}>
-            {l}
-          </MenuItem>
-        ))}
-      </Menu>
+      <Popover
+        open={open}
+        anchorEl={anchor}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+        PaperProps={{
+          sx: {
+            mt: 0.5, width: '90vw', maxWidth: 1400,
+            border: `1px solid ${blueGray[200]}`,
+            borderRadius: '4px',
+            boxShadow: '0px 8px 24px rgba(0,0,0,0.12)',
+          }
+        }}>
+        {/* Search */}
+        <Box sx={{ p: 1.5, borderBottom: `1px solid ${blueGray[100]}` }}>
+          <TextField
+            autoFocus
+            fullWidth
+            size="small"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={placeholder || 'Search for language'}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ fontSize: 18, color: blueGray[400] }} />
+                </InputAdornment>
+              ),
+              endAdornment: search ? (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => setSearch('')}>
+                    <CloseIcon sx={{ fontSize: 16, color: blueGray[400] }} />
+                  </IconButton>
+                </InputAdornment>
+              ) : null,
+              sx: { bgcolor: 'background.default', borderRadius: '4px' }
+            }}
+            sx={{ '& .MuiOutlinedInput-notchedOutline': { borderColor: blueGray[200] } }}
+          />
+        </Box>
+        {/* Grid */}
+        <Box sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(5, 1fr)',
+          gap: 0, p: 1,
+        }}>
+          {filtered.map(l => (
+            <Box key={l}
+              onClick={() => { onChange(l); handleClose(); }}
+              sx={{
+                px: 1.5, py: '7px', cursor: 'pointer', borderRadius: '4px',
+                fontSize: '0.875rem', lineHeight: 1.4,
+                fontWeight: l === value ? 700 : 400,
+                color: 'text.primary',
+                '&:hover': { bgcolor: blue[50], color: blue[600] },
+              }}>
+              {l}
+            </Box>
+          ))}
+          {filtered.length === 0 && (
+            <Box sx={{ gridColumn: '1 / -1', py: 3, textAlign: 'center', color: blueGray[400], fontSize: '0.875rem' }}>
+              No results
+            </Box>
+          )}
+        </Box>
+      </Popover>
     </>
   );
 }
@@ -537,7 +616,7 @@ export default function App() {
             '& .Mui-selected': { color: '#27336F !important' },
             '& .MuiTabs-indicator': { bgcolor: '#27336F', height: 2 },
           }}>
-            <Tab icon={<QuickreplyOutlinedIcon sx={{ fontSize: 16 }} />} iconPosition="start"
+            <Tab icon={<DsTranslateIcon size={18} sx={{ color: 'currentColor' }} />} iconPosition="start"
               label="Quick translation" />
             <Tab icon={<ArticleOutlinedIcon sx={{ fontSize: 16 }} />} iconPosition="start"
               label="File translation" />
@@ -561,35 +640,38 @@ export default function App() {
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column',
           bgcolor: 'background.default', maxWidth: 1400, width: '100%', mx: 'auto' }}>
 
-          {/* Language bar */}
+          {/* Language bar — swap icon exactly at center */}
           <Box sx={{
-            bgcolor: 'background.default', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            py: 0.5, gap: 0.5,
+            bgcolor: 'background.default',
+            px: { xs: 2, sm: 3, md: 4 },
+            py: 2,
+            display: 'flex', alignItems: 'center',
           }}>
-            <LangBtn value={sourceLang} anchor={srcA} setAnchor={setSrcA}
-              options={SOURCE_LANGS} onChange={setSourceLang} />
+            {/* Source half — right-aligned so button sits just left of center */}
+            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+              <LangBtn value={sourceLang} anchor={srcA} setAnchor={setSrcA}
+                options={SOURCE_LANGS} onChange={setSourceLang} />
+            </Box>
+            {/* Swap — exactly at center point */}
             <Tooltip title="Swap languages">
-              <IconButton
-                size="small"
-                onClick={handleSwap}
-                sx={{
-                  color: `rgba(59,55,81,0.54)`,
-                  width: 36, height: 36,
-                  '&:hover': { bgcolor: blueGray[100], color: blueGray[700] },
-                }}>
+              <IconButton size="small" onClick={handleSwap}
+                sx={{ color: 'rgba(59,55,81,0.54)', width: 36, height: 36, mx: 0.5,
+                  '&:hover': { bgcolor: blueGray[100], color: blueGray[700] } }}>
                 <SwapHorizIcon sx={{ fontSize: 22 }} />
               </IconButton>
             </Tooltip>
-            <LangBtn value={targetLang} anchor={tgtA} setAnchor={setTgtA}
-              options={TARGET_LANGS} onChange={setTargetLang} />
+            {/* Target half — left-aligned so button sits just right of center */}
+            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+              <LangBtn value={targetLang} anchor={tgtA} setAnchor={setTgtA}
+                options={TARGET_LANGS} onChange={setTargetLang} />
+            </Box>
           </Box>
 
           {/* Two-column layout */}
           <Box sx={{
             display: 'flex',
             px: { xs: 2, sm: 3, md: 4 },
-            pt: 1, pb: 2,
+            pt: 0, pb: 2,
             gap: 2,
             flexWrap: 'wrap',
             alignItems: 'flex-start',
@@ -935,15 +1017,15 @@ export default function App() {
             boxShadow: '0px 4px 4px 0px rgba(0,0,0,0.08)',
             px: 2, py: '6px',
             minHeight: 52, minWidth: 220, maxWidth: 420,
-          }}>
+          }}
+>
             <Box sx={{ pt: '10px', flexShrink: 0 }}>
               {snackType === 'success'
                 ? <DsCheckCircleIcon size={20} sx={{ color: green[600] }} />
                 : <DsInfoCircleIcon  size={20} sx={{ color: blue[500] }} />
               }
             </Box>
-            <Box sx={{ flex: 1, py: '10px' }}
->
+            <Box sx={{ flex: 1, py: '10px' }}>
               <Typography variant="body2" color="text.primary"
                 sx={{ lineHeight: 1.4, letterSpacing: '0.15px', fontWeight: 400 }}>
                 {snackMsg}
