@@ -586,7 +586,7 @@ export default function App() {
       <style>{`
         textarea.fs-ta::placeholder { color: ${placeholderColor}; }
         textarea.fs-ta:focus { outline: none; }
-        .fluent-source-panel:focus-within { border: 2px solid ${blue[500]} !important; box-shadow: none !important; }
+        .fluent-source-panel:focus-within { box-shadow: inset 0 0 0 2px ${blue[500]}, 0px 2px 4px 0px rgba(0,0,0,0.08) !important; }
       `}</style>
 
       <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
