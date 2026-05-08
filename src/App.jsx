@@ -750,7 +750,7 @@ export default function App() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <Typography variant="body2" color="text.primary">Match company language</Typography>
                       <Tooltip
-                        title="We're checking your glossaries and internal reference files to keep translations consistent. It can add 3–5 seconds to processing time."
+                        title="It's checking your glossaries and internal reference files to keep translations consistent. It can add 3–5 seconds to processing time."
                         arrow
                       >
                         <Box component="span" sx={{ cursor: 'help', display: 'flex', alignItems: 'center' }}>
@@ -982,7 +982,7 @@ export default function App() {
 
         {/* ══ RAG first-time dialog ════════════════════════════════════════════ */}
         <Dialog open={showRagDialog} maxWidth="xs" fullWidth
-          PaperProps={{ sx: { borderRadius: 3 } }}>
+          PaperProps={{ sx: { borderRadius: '4px !important' } }}>
           <DialogContent sx={{ pt: 3, pb: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <AutoAwesomeIcon sx={{ color: blue[500], fontSize: 22 }} />
@@ -999,17 +999,21 @@ export default function App() {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.65 }}>
               Translates using your organization's approved glossary, style guide, and reference documents. Turn it off anytime.
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1,
-              bgcolor: blue[50], border: `1px solid ${blue[200]}`, borderRadius: 1.5, p: 1.5 }}>
-              <InfoOutlinedIcon sx={{ color: blue[500], fontSize: 15, mt: '1px', flexShrink: 0 }} />
-              <Typography variant="caption" color="text.secondary">
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5,
+              bgcolor: blue[50], border: `1px solid ${blue[200]}`, borderRadius: '4px', p: 1.5 }}>
+              <DsInfoCircleIcon size={16} sx={{ color: blue[500], mt: '1px', flexShrink: 0 }} />
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5 }}>
                 It can add 3–5 seconds to processing time.
               </Typography>
             </Box>
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2.5, pt: 1.5 }}>
+          <DialogActions sx={{
+            px: 3, py: 2,
+            bgcolor: blueGray[50],
+            borderTop: `1px solid ${blueGray[100]}`,
+          }}>
             <Button variant="contained" onClick={handleDialogOk}
-                         sx={{ bgcolor: '#27336F', color: '#fff', borderRadius: 20, px: 3,
+              sx={{ bgcolor: '#27336F', color: '#fff', borderRadius: 20, px: 3,
                 '&:hover': { bgcolor: '#1F2A5E' } }}>
               Got it
             </Button>
