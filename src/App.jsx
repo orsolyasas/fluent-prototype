@@ -6,6 +6,7 @@ import {
   Checkbox, FormControlLabel, Dialog, DialogContent, DialogActions,
   Menu, MenuItem, Snackbar, Alert, CircularProgress, LinearProgress, Skeleton, Divider,
   TextField, InputAdornment, Popover, RadioGroup, FormControl, FormLabel, Radio as MuiRadio, FormControlLabel as MuiFormControlLabel, Select, InputLabel,
+  useMediaQuery,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -38,34 +39,29 @@ const blueGray = { 900:'#302D42', 800:'#3B3751', 700:'#4A4663', 600:'#615D7B',
 const green    = { 700:'#059054', 600:'#09AE67', 500:'#14C97B', 100:'#E4FBF1' };
 
 
-// ── Sample text pool (domain-specific, with quality diff between Speed draft / RAG) ────
+// ── Sample text pool ──────────────────────────────────────────────────────────
 const SAMPLE_POOL = [
   {
-    // 0 — Government / Policy (original, first use)
     source: 'The Department is committed to advancing meaningful stakeholder engagement throughout the implementation of the new federal framework. We will publish a stakeholder engagement plan and invite written submissions before the end of the second quarter. Departmental officials will host two virtual roundtables with representatives from civil society organizations, with simultaneous interpretation in both official languages.',
     speedDraft: 'A Minisztérium elkötelezett amellett, hogy előmozdítsa a jelentőségteljes érintetti részvételt az új szövetségi keretrendszer végrehajtása során. Közreadunk egy érintetti részvételi tervet, és írásbeli hozzászólásokat kérünk a második negyedév vége előtt. A minisztériumi tisztviselők két virtuális kerekasztal-beszélgetést szerveznek civil társadalmi szervezetek képviselőivel, mindkét hivatalos nyelven egyidejű tolmácsolással.',
     rag: 'A Minisztérium elkötelezett a szövetségi keretrendszer implementációja során megvalósuló érdemi stakeholder-bevonás előmozdítása mellett. Ezúton közzétesszük a társadalmi egyeztetési tervet, és várjuk az írásos észrevételeket a második negyedév lezárultáig. A tárca tisztviselői két virtuális kerekasztal-konferenciát rendeznek a civil szféra képviselői számára, biztosítva a mindkét hivatalos nyelven elérhető szinkrontolmácsolást.',
   },
   {
-    // 1 — Marketing / Product launch
     source: 'Introducing our next-generation platform designed to transform how enterprises manage their digital workflows. Built on cutting-edge AI technology, our solution reduces operational costs by up to 40% while increasing team productivity. Early adopters gain exclusive access to our premium feature set and dedicated onboarding support at no additional cost.',
     speedDraft: 'Bemutatjuk a következő generációs platformunkat, amelyet arra terveztek, hogy átalakítsa a vállalatok digitális munkafolyamatainak kezelési módját. Az élvonalbeli MI-technológiára épülő megoldásunk akár 40%-kal csökkenti az üzemeltetési költségeket, miközben növeli a csapat termelékenységét. A korai felhasználók exkluzív hozzáférést kapnak a prémium funkciókhoz és a dedikált onboarding-támogatáshoz, külön díj nélkül.',
     rag: 'Bemutatjuk következő generációs platformunkat, amely forradalmasítja a vállalati digitális munkafolyamatok kezelését. Élvonalbeli mesterséges intelligencia technológiánk akár 40%-os üzemeltetési költségcsökkentést és mérhetően magasabb csapathatékonyságot biztosít. A korai alkalmazók ingyenesen férhetnek hozzá a teljes prémium funkcionalitáshoz és a személyre szabott bevezetési támogatáshoz.',
   },
   {
-    // 2 — Medical / Clinical trial
     source: 'Patients enrolled in the clinical trial must meet all inclusion criteria and provide written informed consent prior to any study procedures. Adverse events should be reported within 24 hours of occurrence to the principal investigator. The study protocol has been approved by the Institutional Review Board and complies with Good Clinical Practice guidelines.',
     speedDraft: 'A klinikai vizsgálatba bevont betegeknek meg kell felelniük az összes bevonási kritériumnak, és írásos tájékozott beleegyezést kell adniuk a vizsgálati eljárások előtt. A nemkívánatos eseményeket a főnyomozónak 24 órán belül kell jelenteni. A vizsgálati protokollt az Intézményi Felülvizsgálati Testület jóváhagyta, és megfelel a Helyes Klinikai Gyakorlat irányelveinek.',
     rag: 'A klinikai vizsgálatba bevont betegeknek valamennyi befogadási kritériumnak meg kell felelniük, és a vizsgálati eljárások megkezdése előtt írásos tájékozott beleegyező nyilatkozatot kell aláírniuk. Az esetleges nemkívánatos eseményeket 24 órán belül kötelező jelezni a főkutató orvosnak. A vizsgálati protokollt az Etikai Bizottság jóváhagyta, és összhangban van az ICH E6(R2) Helyes Klinikai Gyakorlat-irányelveivel.',
   },
   {
-    // 3 — Legal / Contract
     source: 'This agreement constitutes the entire understanding between the parties and supersedes all prior negotiations, representations, or agreements relating to the subject matter hereof. Any amendment to this contract must be made in writing and signed by authorized representatives of both parties. The prevailing party in any dispute arising from this agreement shall be entitled to recover reasonable legal fees.',
     speedDraft: 'Ez a megállapodás a felek közötti teljes megértést jelenti, és felváltja az erre vonatkozó tárgy összes korábbi tárgyalását, képviseletét vagy megállapodását. A szerződés bármely módosítását írásban kell elkészíteni, és mindkét fél felhatalmazott képviselőinek alá kell írniuk. Az ebből a megállapodásból eredő vitában győztes fél jogosult a megfelelő jogi díjak visszaszerzésére.',
     rag: 'Jelen szerződés a felek között létrejött teljes megállapodást testesíti meg, és hatálytalanít minden, a tárgyát érintő korábbi tárgyalást, nyilatkozatot vagy megállapodást. A szerződés módosítása kizárólag írásban, mindkét fél meghatalmazott képviselőjének aláírásával érvényes. A jelen szerződésből eredő jogvitában győztes fél jogosult az ésszerű mértékű ügyvédi és eljárási díjai megtérítésére.',
   },
   {
-    // 4 — HR / Internal communication
     source: 'Following the completion of our annual performance review cycle, we are pleased to announce updated compensation guidelines for the upcoming fiscal year. Employees who received an exceptional rating will be eligible for a merit increase of up to 8%. All managers are required to complete salary review discussions with their direct reports by the end of the month.',
     speedDraft: 'Az éves teljesítményértékelési ciklus befejezését követően örömmel jelentjük be a közelgő pénzügyi évre vonatkozó frissített bérezési irányelveket. A kivételes minősítésben részesült munkavállalók akár 8%-os érdememeléssel jogosultak. Minden vezető köteles a hónap végéig befejezni a bérfelülvizsgálati megbeszéléseket a közvetlen beosztottakkal.',
     rag: 'Az éves teljesítményértékelési ciklus lezárultával örömmel tájékoztatjuk munkatársainkat a következő üzleti évre vonatkozó bérezési keretrendszer frissítéséről. A „kiváló" minősítést elért munkavállalók legfeljebb 8%-os teljesítményalapú béremelésre jogosultak. Valamennyi vezető köteles a tárgyhónap végéig egyéni bérfelülvizsgálati megbeszélést folytatni közvetlen beosztottaival.',
@@ -74,7 +70,6 @@ const SAMPLE_POOL = [
 
 const FIRST_USE_IDX = 0;
 
-// ── Sample content (kept for backward compatibility) ──────────────────────────
 const SOURCE_TEXT =
   'The Department is committed to advancing meaningful stakeholder engagement throughout the implementation of the new federal framework. We will publish a stakeholder engagement plan and invite written submissions before the end of the second quarter. Departmental officials will host two virtual roundtables with representatives from civil society organizations, with simultaneous interpretation in both official languages.';
 
@@ -98,15 +93,15 @@ const ALL_SOURCE_LANGS = [
   'Spanish (Mexico)','Spanish (Spain)','Swedish','Thai','Turkish','Ukrainian','Vietnamese','Welsh',
 ];
 const ALL_TARGET_LANGS = ALL_SOURCE_LANGS.filter(l => l !== 'Autodetect language');
-const SOURCE_LANGS = ALL_SOURCE_LANGS; // kept for compatibility
-const TARGET_LANGS = ALL_TARGET_LANGS; // kept for compatibility
+const SOURCE_LANGS = ALL_SOURCE_LANGS;
+const TARGET_LANGS = ALL_TARGET_LANGS;
 const DOMAINS = ['Match source', 'Legal', 'Technical', 'Medical', 'Marketing', 'Custom'];
 const DOMAIN_OPTIONS = ['Match source', 'Legal', 'Technical', 'Medical', 'Marketing', 'Custom'];
 const TONES = ['Match source', 'Formal', 'Informal', 'Custom'];
 const TONE_OPTIONS   = ['Match source', 'Formal', 'Informal', 'Custom'];
 const RAG_STEPS = ['Translating…', 'Checking glossary and reference files…', 'Adapting tone…', "We're almost done…"];
 const RAG_STEP_MS = [1200, 1500, 1500, 1100];
-const RAG_PROGRESS = [0, 25, 75, 95]; // progress % per step — starts at 0
+const RAG_PROGRESS = [0, 25, 75, 95];
 
 // ── Theme factory ─────────────────────────────────────────────────────────────
 function makeTheme(dark) {
@@ -151,7 +146,7 @@ function makeTheme(dark) {
   });
 }
 
-// ── Dropdown chip (domain / tone) — beta style: plain, no chevron ─────────────
+// ── Dropdown chip (domain / tone) ─────────────────────────────────────────────
 function DropChip({ value, anchor, setAnchor, options, onChange }) {
   return (
     <>
@@ -184,9 +179,10 @@ function DropChip({ value, anchor, setAnchor, options, onChange }) {
   );
 }
 
-// ── Language selector — beta style: search + multi-column grid ────────────────
-function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder, containerRef }) {
+// ── Language selector ─────────────────────────────────────────────────────────
+function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder, containerRef, ariaLabel }) {
   const [search, setSearch] = React.useState('');
+  const isMobile = useMediaQuery('(max-width:599.95px)');
   const filtered = search
     ? options.filter(l => l.toLowerCase().includes(search.toLowerCase()))
     : options;
@@ -196,17 +192,32 @@ function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder, con
   return (
     <>
       <Button size="small"
+        aria-label={ariaLabel || value}
+        aria-expanded={open}
+        aria-haspopup="listbox"
         endIcon={open
           ? <KeyboardArrowDownIcon sx={{ fontSize: 16, ml: '-2px', transform: 'rotate(180deg)' }} />
           : <KeyboardArrowDownIcon sx={{ fontSize: 16, ml: '-2px' }} />}
         onClick={(e) => setAnchor(e.currentTarget)}
         sx={{
-          color: blue[500], fontWeight: 600, fontSize: '0.9375rem',
-          textTransform: 'none', px: '12px', py: '10px',
+          color: blue[500], fontWeight: 600,
+          fontSize: { xs: '0.875rem', sm: '0.9375rem' },
+          textTransform: 'none',
+          px: { xs: '8px', sm: '12px' },
+          py: '10px',
           borderRadius: '100px', border: 'none', lineHeight: 1.2,
+          maxWidth: { xs: '140px', sm: 'none' },
+          '& .MuiButton-endIcon': { flexShrink: 0 },
           '&:hover': { bgcolor: blue[50], color: blue[600] },
         }}>
-        {value}
+        <Box component="span" sx={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          display: 'block',
+        }}>
+          {value}
+        </Box>
       </Button>
       <Popover
         open={open}
@@ -232,6 +243,7 @@ function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder, con
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={placeholder || 'Search for language'}
+            inputProps={{ 'aria-label': 'Search languages' }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -240,7 +252,7 @@ function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder, con
               ),
               endAdornment: search ? (
                 <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearch('')}>
+                  <IconButton size="small" onClick={() => setSearch('')} aria-label="Clear search">
                     <CloseIcon sx={{ fontSize: 16, color: blueGray[400] }} />
                   </IconButton>
                 </InputAdornment>
@@ -250,14 +262,21 @@ function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder, con
             sx={{ '& .MuiOutlinedInput-notchedOutline': { borderColor: blueGray[200] } }}
           />
         </Box>
-        {/* Grid */}
-        <Box sx={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: 0, p: 1,
-        }}>
+        {/* Grid — 2 columns on mobile, 5 on desktop */}
+        <Box
+          role="listbox"
+          aria-label={placeholder || 'Select language'}
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
+            gap: 0, p: 1,
+            maxHeight: isMobile ? '50vh' : 'none',
+            overflowY: isMobile ? 'auto' : 'visible',
+          }}>
           {filtered.map(l => (
             <Box key={l}
+              role="option"
+              aria-selected={l === value}
               onClick={() => { onChange(l); handleClose(); }}
               sx={{
                 px: 1.5, py: '7px', cursor: 'pointer', borderRadius: '4px',
@@ -280,11 +299,11 @@ function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder, con
   );
 }
 
-// ── DS Information icon (from memoQ DS icon library) ─────────────────────────
+// ── DS inline SVG icons ───────────────────────────────────────────────────────
 function DsCheckCircleIcon({ size = 20, sx = {} }) {
   return (
     <Box component="svg" width={size} height={size} viewBox="0 0 24 24" fill="none"
-      xmlns="http://www.w3.org/2000/svg" sx={{ flexShrink: 0, ...sx }}>
+      xmlns="http://www.w3.org/2000/svg" sx={{ flexShrink: 0, ...sx }} aria-hidden="true">
       <path d="M10.5068 16.4191L17.413 10.0581L16.0581 8.58698L10.6361 13.5809L8.47062 11.1875L6.98755 12.5294L10.5068 16.4191Z" fill="currentColor"/>
       <path fillRule="evenodd" clipRule="evenodd" d="M2.04199 12C2.04199 17.514 6.52799 22 12.042 22C17.556 22 22.042 17.514 22.042 12C22.042 6.486 17.556 2 12.042 2C6.52799 2 2.04199 6.486 2.04199 12ZM4.04199 12C4.04199 7.589 7.63099 4 12.042 4C16.453 4 20.042 7.589 20.042 12C20.042 16.411 16.453 20 12.042 20C7.63099 20 4.04199 16.411 4.04199 12Z" fill="currentColor"/>
     </Box>
@@ -293,33 +312,28 @@ function DsCheckCircleIcon({ size = 20, sx = {} }) {
 function DsInfoCircleIcon({ size = 20, sx = {} }) {
   return (
     <Box component="svg" width={size} height={size} viewBox="0 0 24 24" fill="none"
-      xmlns="http://www.w3.org/2000/svg" sx={{ flexShrink: 0, ...sx }}>
+      xmlns="http://www.w3.org/2000/svg" sx={{ flexShrink: 0, ...sx }} aria-hidden="true">
       <path d="M12.0022 22C6.4882 22 2.0022 17.515 2.0022 12C2.0022 6.487 6.4882 2 12.0022 2C17.5162 2 22.0022 6.486 22.0022 12C22.0022 17.515 17.5162 22 12.0022 22ZM12.0022 4C7.5912 4 4.0022 7.589 4.0022 12C4.0022 16.411 7.5912 20 12.0022 20C16.4132 20 20.0022 16.411 20.0022 12C20.0022 7.589 16.4132 4 12.0022 4Z" fill="currentColor"/>
       <path d="M13.0022 15V11C13.0022 10.448 12.5552 10 12.0022 10H10.0022V12H11.0022V15H9.0022V17H15.0022V15H13.0022Z" fill="currentColor"/>
       <path d="M12.0022 9.25C12.6926 9.25 13.2522 8.69036 13.2522 8C13.2522 7.30964 12.6926 6.75 12.0022 6.75C11.3118 6.75 10.7522 7.30964 10.7522 8C10.7522 8.69036 11.3118 9.25 12.0022 9.25Z" fill="currentColor"/>
     </Box>
   );
 }
-
 function DsInfoIcon({ size = 20, sx = {} }) {
   return (
-    <Box component="svg"
-      width={size} height={size} viewBox="0 0 24 24"
+    <Box component="svg" width={size} height={size} viewBox="0 0 24 24"
       fill="none" xmlns="http://www.w3.org/2000/svg"
-      sx={{ flexShrink: 0, ...sx }}>
+      sx={{ flexShrink: 0, ...sx }} aria-hidden="true">
       <path d="M12.0022 22C6.4882 22 2.0022 17.515 2.0022 12C2.0022 6.487 6.4882 2 12.0022 2C17.5162 2 22.0022 6.486 22.0022 12C22.0022 17.515 17.5162 22 12.0022 22ZM12.0022 4C7.5912 4 4.0022 7.589 4.0022 12C4.0022 16.411 7.5912 20 12.0022 20C16.4132 20 20.0022 16.411 20.0022 12C20.0022 7.589 16.4132 4 12.0022 4Z" fill="currentColor"/>
       <path d="M13.0022 15V11C13.0022 10.448 12.5552 10 12.0022 10H10.0022V12H11.0022V15H9.0022V17H15.0022V15H13.0022Z" fill="currentColor"/>
       <path d="M12.0022 9.25C12.6926 9.25 13.2522 8.69036 13.2522 8C13.2522 7.30964 12.6926 6.75 12.0022 6.75C11.3118 6.75 10.7522 7.30964 10.7522 8C10.7522 8.69036 11.3118 9.25 12.0022 9.25Z" fill="currentColor"/>
     </Box>
   );
 }
-
-// ── DS inline SVG icons ───────────────────────────────────────────────────────
 function DsMoonIcon({ size = 20, sx = {} }) {
   return (
     <Box component="svg" width={size} height={size} viewBox="0 0 24 24" fill="none"
-      xmlns="http://www.w3.org/2000/svg" sx={{ flexShrink: 0, ...sx }}>
-      <path fillRule="evenodd" clipRule="evenodd" d="M9.35292 2.93877C9.6362 3.22204 9.72307 3.64704 9.57369 4.01876C9.20396 4.93879 9 5.94438 9 7.00006C9 11.4183 12.5817 15.0001 17 15.0001C18.0557 15.0001 19.0613 14.7961 19.9813 14.4264C20.353 14.277 20.778 14.3639 21.0613 14.6471C21.3446 14.9304 21.4314 15.3554 21.2821 15.7271C19.8051 19.4024 16.2071 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001C2 7.79294 4.59771 4.19496 8.27293 2.718C8.64465 2.56861 9.06964 2.65549 9.35292 2.93877ZM7.08558 5.68677C5.20699 7.1513 4 9.43543 4 12.0001C4 16.4183 7.58172 20.0001 12 20.0001C14.5646 20.0001 16.8488 18.7931 18.3133 16.9145C17.8833 16.9709 17.4449 17.0001 17 17.0001C11.4772 17.0001 7 12.5229 7 7.00006C7 6.55516 7.02911 6.11677 7.08558 5.68677Z" fill="currentColor"/>
+      xmlns="http://www.w3.org/2000/svg" sx={{ flexShrink: 0, ...sx }} aria-hidden="true">
       <path fillRule="evenodd" clipRule="evenodd" d="M9.35292 2.93877C9.6362 3.22204 9.72307 3.64704 9.57369 4.01876C9.20396 4.93879 9 5.94438 9 7.00006C9 11.4183 12.5817 15.0001 17 15.0001C18.0557 15.0001 19.0613 14.7961 19.9813 14.4264C20.353 14.277 20.778 14.3639 21.0613 14.6471C21.3446 14.9304 21.4314 15.3554 21.2821 15.7271C19.8051 19.4024 16.2071 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001C2 7.79294 4.59771 4.19496 8.27293 2.718C8.64465 2.56861 9.06964 2.65549 9.35292 2.93877ZM7.08558 5.68677C5.20699 7.1513 4 9.43543 4 12.0001C4 16.4183 7.58172 20.0001 12 20.0001C14.5646 20.0001 16.8488 18.7931 18.3133 16.9145C17.8833 16.9709 17.4449 17.0001 17 17.0001C11.4772 17.0001 7 12.5229 7 7.00006C7 6.55516 7.02911 6.11677 7.08558 5.68677Z" fill="currentColor"/>
     </Box>
   );
@@ -327,8 +341,7 @@ function DsMoonIcon({ size = 20, sx = {} }) {
 function DsSunIcon({ size = 20, sx = {} }) {
   return (
     <Box component="svg" width={size} height={size} viewBox="0 0 24 24" fill="none"
-      xmlns="http://www.w3.org/2000/svg" sx={{ flexShrink: 0, ...sx }}>
-      <path fillRule="evenodd" clipRule="evenodd" d="M12 2C12.5523 2 13 2.44772 13 3V4C13 4.55228 12.5523 5 12 5C11.4477 5 11 4.55228 11 4V3C11 2.44772 11.4477 2 12 2ZM4.92893 4.92893C5.31946 4.53841 5.95262 4.53841 6.34315 4.92893L7.05025 5.63604C7.44078 6.02656 7.44078 6.65973 7.05025 7.05025C6.65973 7.44078 6.02656 7.44078 5.63604 7.05025L4.92893 6.34315C4.53841 5.95262 4.53841 5.31946 4.92893 4.92893ZM19.0711 4.92899C19.4616 5.31951 19.4616 5.95267 19.0711 6.3432L18.364 7.05031C17.9735 7.44083 17.3403 7.44083 16.9498 7.05031C16.5593 6.65978 16.5593 6.02662 16.9498 5.63609L17.6569 4.92899C18.0474 4.53846 18.6806 4.53846 19.0711 4.92899ZM12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9ZM7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12ZM2 12C2 11.4477 2.44772 11 3 11H4C4.55228 11 5 11.4477 5 12C5 12.5523 4.55228 13 4 13H3C2.44772 13 2 12.5523 2 12ZM19 12C19 11.4477 19.4477 11 20 11H21C21.5523 11 22 11.4477 22 12C22 12.5523 21.5523 13 21 13H20C19.4477 13 19 12.5523 19 12ZM16.9497 16.9497C17.3403 16.5592 17.9734 16.5592 18.364 16.9497L19.0711 17.6569C19.4616 18.0474 19.4616 18.6805 19.0711 19.0711C18.6805 19.4616 18.0474 19.4616 17.6569 19.0711L16.9497 18.364C16.5592 17.9734 16.5592 17.3403 16.9497 16.9497ZM5.63609 16.9498C6.02662 16.5593 6.65978 16.5593 7.05031 16.9498C7.44083 17.3403 7.44083 17.9735 7.05031 18.364L6.3432 19.0711C5.95267 19.4616 5.31951 19.4616 4.92898 19.0711C4.53846 18.6806 4.53846 18.0474 4.92899 17.6569L5.63609 16.9498ZM12 19C12.5523 19 13 19.4477 13 20V21C13 21.5523 12.5523 22 12 22C11.4477 22 11 21.5523 11 21V20C11 19.4477 11.4477 19 12 19Z" fill="currentColor"/>
+      xmlns="http://www.w3.org/2000/svg" sx={{ flexShrink: 0, ...sx }} aria-hidden="true">
       <path fillRule="evenodd" clipRule="evenodd" d="M12 2C12.5523 2 13 2.44772 13 3V4C13 4.55228 12.5523 5 12 5C11.4477 5 11 4.55228 11 4V3C11 2.44772 11.4477 2 12 2ZM4.92893 4.92893C5.31946 4.53841 5.95262 4.53841 6.34315 4.92893L7.05025 5.63604C7.44078 6.02656 7.44078 6.65973 7.05025 7.05025C6.65973 7.44078 6.02656 7.44078 5.63604 7.05025L4.92893 6.34315C4.53841 5.95262 4.53841 5.31946 4.92893 4.92893ZM19.0711 4.92899C19.4616 5.31951 19.4616 5.95267 19.0711 6.3432L18.364 7.05031C17.9735 7.44083 17.3403 7.44083 16.9498 7.05031C16.5593 6.65978 16.5593 6.02662 16.9498 5.63609L17.6569 4.92899C18.0474 4.53846 18.6806 4.53846 19.0711 4.92899ZM12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9ZM7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12ZM2 12C2 11.4477 2.44772 11 3 11H4C4.55228 11 5 11.4477 5 12C5 12.5523 4.55228 13 4 13H3C2.44772 13 2 12.5523 2 12ZM19 12C19 11.4477 19.4477 11 20 11H21C21.5523 11 22 11.4477 22 12C22 12.5523 21.5523 13 21 13H20C19.4477 13 19 12.5523 19 12ZM16.9497 16.9497C17.3403 16.5592 17.9734 16.5592 18.364 16.9497L19.0711 17.6569C19.4616 18.0474 19.4616 18.6805 19.0711 19.0711C18.6805 19.4616 18.0474 19.4616 17.6569 19.0711L16.9497 18.364C16.5592 17.9734 16.5592 17.3403 16.9497 16.9497ZM5.63609 16.9498C6.02662 16.5593 6.65978 16.5593 7.05031 16.9498C7.44083 17.3403 7.44083 17.9735 7.05031 18.364L6.3432 19.0711C5.95267 19.4616 5.31951 19.4616 4.92898 19.0711C4.53846 18.6806 4.53846 18.0474 4.92899 17.6569L5.63609 16.9498ZM12 19C12.5523 19 13 19.4477 13 20V21C13 21.5523 12.5523 22 12 22C11.4477 22 11 21.5523 11 21V20C11 19.4477 11.4477 19 12 19Z" fill="currentColor"/>
     </Box>
   );
@@ -336,13 +349,7 @@ function DsSunIcon({ size = 20, sx = {} }) {
 function DsTranslateIcon({ size = 20, sx = {} }) {
   return (
     <Box component="svg" width={size} height={size} viewBox="0 0 24 24" fill="none"
-      xmlns="http://www.w3.org/2000/svg" sx={{ flexShrink: 0, ...sx }}>
-      <path d="M23 10H16V12H22V22H12V16H10V23C10 23.553 10.448 24 11 24H23C23.553 24 24 23.553 24 23V11C24 10.447 23.553 10 23 10Z" fill="currentColor"/>
-      <path d="M14.919 21.394L15.517 20H18.484L19.082 21.394L20.92 20.606L17.92 13.606C17.762 13.238 17.4 13 17 13C16.601 13 16.238 13.238 16.081 13.606L13.081 20.606L14.919 21.394ZM17.627 18H16.374L17 16.538L17.627 18Z" fill="currentColor"/>
-      <path d="M6 7.381L7 7.881L8 7.381V6H6V7.381Z" fill="currentColor"/>
-      <path d="M14 0H0V14H14V0ZM12 6H10V8C10 8.379 9.786 8.726 9.447 8.894L9.236 9L11.447 10.105L10.552 11.894L7 10.118L3.447 11.894L2.552 10.105L4.764 9L4.553 8.894C4.214 8.725 4 8.378 4 8V6H2V4H6V2H8V4H12V6Z" fill="currentColor"/>
-      <path d="M23 3H19.414L20.707 1.707L19.293 0.292999L15.586 4L19.293 7.707L20.707 6.293L19.414 5H22V8H24V4C24 3.447 23.553 3 23 3Z" fill="currentColor"/>
-      <path d="M4.293 17.707L5.586 19H2V16H0V20C0 20.553 0.448 21 1 21H5.586L4.293 22.293L5.707 23.707L9.414 20L5.707 16.293L4.293 17.707Z" fill="currentColor"/>
+      xmlns="http://www.w3.org/2000/svg" sx={{ flexShrink: 0, ...sx }} aria-hidden="true">
       <path d="M23 10H16V12H22V22H12V16H10V23C10 23.553 10.448 24 11 24H23C23.553 24 24 23.553 24 23V11C24 10.447 23.553 10 23 10Z" fill="currentColor"/>
       <path d="M14.919 21.394L15.517 20H18.484L19.082 21.394L20.92 20.606L17.92 13.606C17.762 13.238 17.4 13 17 13C16.601 13 16.238 13.238 16.081 13.606L13.081 20.606L14.919 21.394ZM17.627 18H16.374L17 16.538L17.627 18Z" fill="currentColor"/>
       <path d="M6 7.381L7 7.881L8 7.381V6H6V7.381Z" fill="currentColor"/>
@@ -352,11 +359,10 @@ function DsTranslateIcon({ size = 20, sx = {} }) {
     </Box>
   );
 }
-
 function DsDocumentUploadIcon({ size = 20, sx = {} }) {
   return (
     <Box component="svg" width={size} height={size} viewBox="0 0 24 24" fill="none"
-      xmlns="http://www.w3.org/2000/svg" sx={{ flexShrink: 0, ...sx }}>
+      xmlns="http://www.w3.org/2000/svg" sx={{ flexShrink: 0, ...sx }} aria-hidden="true">
       <path d="M12 9H4V11H12V9Z" fill="currentColor"/>
       <path d="M10 13H4V15H10V13Z" fill="currentColor"/>
       <path d="M16 6V11H18V4.586L13.414 0H2C0.897 0 0 0.898 0 2V20C0 21.103 0.897 22 2 22H12V20H2V2H12V6H16Z" fill="currentColor"/>
@@ -369,6 +375,9 @@ function DsDocumentUploadIcon({ size = 20, sx = {} }) {
 export default function App() {
   const [darkMode, setDarkMode]   = useState(false);
   const theme = makeTheme(darkMode);
+
+  // ── Responsive breakpoint ────────────────────────────────────────────────────
+  const isMobile = useMediaQuery('(max-width:599.95px)');
 
   // Navigation
   const [mainTab, setMainTab] = useState(0);
@@ -391,19 +400,19 @@ export default function App() {
   const [pendingRag, setPendingRag]         = useState(false);
   const [offerDismissed, setOfferDismissed] = useState(false);
   const [ragConfirmed, setRagConfirmed]     = useState(false);
-  const [ragTrialMode, setRagTrialMode]     = useState(false); // true only when triggered via "Try it"
-  const [ragEverTried, setRagEverTried]     = useState(false); // true after first RAG translation
-  const [prevTranslation, setPrevTranslation] = useState(''); // faded bg during retranslation
-  const [sampleIdx, setSampleIdx]             = useState(0);   // current sample index
+  const [ragTrialMode, setRagTrialMode]     = useState(false);
+  const [ragEverTried, setRagEverTried]     = useState(false);
+  const [prevTranslation, setPrevTranslation] = useState('');
+  const [sampleIdx, setSampleIdx]             = useState(0);
 
-  // Phase: idle | translating_speed | result_speed | rag_translating | result_rag_first | result_rag
+  // Phase
   const [phase, setPhase]       = useState('idle');
   const [ragStep, setRagStep]   = useState(0);
 
   // Snackbar
   const [snackMsg, setSnackMsg]   = useState(null);
   const [snackType, setSnackType] = useState('success');
-  const [snackPos, setSnackPos]   = useState('left'); // 'left' | 'right'
+  const [snackPos, setSnackPos]   = useState('left');
 
   // Menus
   const [domainA, setDomainA] = useState(null);
@@ -473,8 +482,7 @@ export default function App() {
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleTranslate = () => {
     if (!sourceText.trim()) return;
-    setRagTrialMode(false); // direct translate is never a trial
-    // Save current translation as faded background for retranslation
+    setRagTrialMode(false);
     if (hasResult) setPrevTranslation(translation);
     else setPrevTranslation('');
     if (ragEnabled) {
@@ -498,23 +506,20 @@ export default function App() {
     setRagEnabled(checked);
     if (checked) {
       if (!ragDialogShown) {
-        setShowRagDialog(true); // first-time dialog, no snackbar yet
+        setShowRagDialog(true);
       } else if (ragEverTried) {
-        // Already used RAG before → simple toggle snackbar
         snack('Match company language is on.', 'success');
       }
     } else {
       if (ragEverTried) {
-        // Already used RAG before → simple toggle snackbar
         snack('Match company language is off.', 'info');
       }
-      // Do NOT auto-retranslate — user must press Translate manually
     }
   };
 
   const handleTryIt = () => {
     if (hasResult) setPrevTranslation(translation);
-    setRagTrialMode(true); // this is a trial — "Keep using?" banner will appear
+    setRagTrialMode(true);
     setRagDialogShown(true);
     setOfferDismissed(true);
     setRagStep(0); setPhase('rag_translating');
@@ -523,17 +528,15 @@ export default function App() {
   const handleKeepUsing = () => {
     setRagConfirmed(true);
     setRagTrialMode(false);
-    setRagEnabled(true); // NOW turn on the checkbox
+    setRagEnabled(true);
     setPhase('result_rag');
     snack("You're now using company language in translations.", 'success');
   };
 
   const handleNotNow = () => {
     setRagTrialMode(false);
-    // Keep RAG result visible — just dismiss the banner, don't revert to speed draft
-    setPhase('result_rag'); // stays on RAG result, banner disappears
+    setPhase('result_rag');
     snack("You're no longer using company language in translations.", 'info');
-    // ragEnabled stays false — next Translate will run speed draft
   };
 
   const handleSwap = () => { const t = sourceLang; setSourceLang(targetLang); setTargetLang(t); };
@@ -546,13 +549,11 @@ export default function App() {
   };
 
   const handlePaste = async () => {
-    // Pick a random sample different from the current one
     const pool = SAMPLE_POOL;
     let next = sampleIdx;
     while (next === sampleIdx) next = Math.floor(Math.random() * pool.length);
     setSampleIdx(next);
     setSourceText(pool[next].source);
-    // Reset translation state when loading new source
     setPhase('idle');
     setPrevTranslation('');
     setOfferDismissed(false);
@@ -570,37 +571,86 @@ export default function App() {
   const isRagResult    = phase === 'result_rag_first' || phase === 'result_rag';
   const hasResult      = isSpeedResult || isRagResult;
   const canTranslate   = sourceText.trim().length > 0 && !isTranslating;
-  const showOffer      = isSpeedResult && !ragEnabled && !ragEverTried; // hide permanently once RAG tried
+  const showOffer      = isSpeedResult && !ragEnabled && !ragEverTried;
   const showKeepUsing  = phase === 'result_rag_first' && ragTrialMode;
   const currentSample = SAMPLE_POOL[sampleIdx] || SAMPLE_POOL[0];
   const translation    = isRagResult ? currentSample.rag : currentSample.speedDraft;
   const H = 56, SN = 52;
 
-  // Placeholder color adapts to dark mode via inline style injection
   const placeholderColor = darkMode ? '#615D7B' : '#ACA9BD';
+
+  // ── RAG progress bar (shared between mobile/desktop) ─────────────────────────
+  const RagProgressBar = () => (
+    <Box
+      role="status"
+      aria-live="polite"
+      aria-label={RAG_STEPS[ragStep]}
+      sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
+    >
+      <Typography variant="caption" fontWeight={600}
+        sx={{ color: 'text.primary', whiteSpace: 'nowrap', flexShrink: 0 }}>
+        {RAG_STEPS[ragStep]}
+      </Typography>
+      <LinearProgress
+        variant="determinate"
+        value={RAG_PROGRESS[ragStep]}
+        aria-valuenow={RAG_PROGRESS[ragStep]}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="Translation progress"
+        sx={{
+          flex: 1, height: 4, borderRadius: 2,
+          bgcolor: blueGray[200],
+          '& .MuiLinearProgress-bar': {
+            bgcolor: blue[500], borderRadius: 2,
+            transition: 'transform 0.8s ease',
+            '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+          },
+        }}
+      />
+      <Typography variant="caption" fontWeight={600}
+        sx={{ color: blueGray[500], flexShrink: 0, minWidth: 32, textAlign: 'right' }}>
+        {RAG_PROGRESS[ragStep]}%
+      </Typography>
+    </Box>
+  );
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      {/* Inject placeholder color */}
+      {/* Global styles + accessibility */}
       <style>{`
         textarea.fs-ta::placeholder { color: ${placeholderColor}; }
         textarea.fs-ta:focus { outline: none; }
         .fluent-source-panel:focus-within { box-shadow: inset 0 0 0 2px ${blue[500]}, 0px 2px 4px 0px rgba(0,0,0,0.08) !important; }
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+          }
+        }
       `}</style>
+
+      {/* Hidden translate hint for screen readers */}
+      <span id="translate-hint" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+        Enter text to translate
+      </span>
 
       <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 
         {/* ══ AppBar ══════════════════════════════════════════════════════════ */}
         <AppBar position="fixed" elevation={0} sx={{ bgcolor: '#27336F', height: H, zIndex: 1300 }}>
-          <Toolbar sx={{ minHeight: `${H}px !important`, px: 3, gap: 1 }}>
+          <Toolbar sx={{ minHeight: `${H}px !important`, px: { xs: 2, sm: 3 }, gap: 1 }}>
             <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '1.125rem',
               letterSpacing: '-0.02em', mr: 'auto' }}>
               Fluent
             </Typography>
 
             <Tooltip title={darkMode ? 'Light mode' : 'Dark mode'}>
-              <IconButton size="small" onClick={() => setDarkMode(d => !d)}
+              <IconButton
+                size="small"
+                onClick={() => setDarkMode(d => !d)}
+                aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
                 sx={{ color: 'rgba(255,255,255,0.65)', '&:hover': { color: '#fff' } }}>
                 {darkMode
                   ? <LightModeOutlinedIcon sx={{ fontSize: 19 }} />
@@ -608,8 +658,8 @@ export default function App() {
               </IconButton>
             </Tooltip>
 
-            {/* Language — beta site style: text + chevron, no chip */}
             <Button size="small"
+              aria-label="Change interface language"
               endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 14, ml: '-6px' }} />}
               sx={{
                 color: '#fff', fontWeight: 700, fontSize: '0.875rem',
@@ -620,20 +670,26 @@ export default function App() {
             </Button>
 
             <Tooltip title="Help">
-              <IconButton size="small"
+              <IconButton size="small" aria-label="Help"
                 sx={{ color: 'rgba(255,255,255,0.65)', '&:hover': { color: '#fff' } }}>
                 <HelpOutlineIcon sx={{ fontSize: 19 }} />
               </IconButton>
             </Tooltip>
 
             <Tooltip title="Account">
-              <Box onClick={(e) => setAvatarA(e.currentTarget)} sx={{
-                width: 30, height: 30, borderRadius: '50%', cursor: 'pointer',
-                bgcolor: blue[500], color: '#fff', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '-0.01em',
-                transition: 'background 0.15s', '&:hover': { bgcolor: blue[600] },
-              }}>AB</Box>
+              <Box
+                role="button"
+                tabIndex={0}
+                aria-label="Account menu"
+                onClick={(e) => setAvatarA(e.currentTarget)}
+                onKeyDown={(e) => e.key === 'Enter' && setAvatarA(e.currentTarget)}
+                sx={{
+                  width: 30, height: 30, borderRadius: '50%', cursor: 'pointer',
+                  bgcolor: blue[500], color: '#fff', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '-0.01em',
+                  transition: 'background 0.15s', '&:hover': { bgcolor: blue[600] },
+                }}>AB</Box>
             </Tooltip>
 
             <Menu anchorEl={avatarA} open={Boolean(avatarA)} onClose={() => setAvatarA(null)}
@@ -659,98 +715,125 @@ export default function App() {
           </Toolbar>
         </AppBar>
 
-        {/* ══ Sub-nav ══════════════════════════════════════════════════════════ */}
-        <Box sx={{ position: 'fixed', top: H, left: 0, right: 0, zIndex: 1200,
+        {/* ══ Sub-nav — desktop only (hidden on mobile) ════════════════════════ */}
+        <Box sx={{
+          display: { xs: 'none', sm: 'block' },
+          position: 'fixed', top: H, left: 0, right: 0, zIndex: 1200,
           bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider',
-          height: SN }}>
-          {/* Inner wrapper matches content area width & padding */}
+          height: SN,
+        }}>
           <Box sx={{ maxWidth: 1400, mx: 'auto', width: '100%', height: '100%',
             display: 'flex', alignItems: 'center',
             px: { xs: 2, sm: 3, md: 4 } }}>
-          <Tabs value={mainTab} onChange={(_, v) => setMainTab(v)} sx={{
-            minHeight: SN,
-            '& .MuiTab-root': { minHeight: SN, py: 0, px: 2, fontSize: '0.875rem', color: blueGray[500] },
-            '& .Mui-selected': { color: '#27336F !important' },
-            '& .MuiTabs-indicator': { bgcolor: '#27336F', height: 2 },
-          }}>
-            <Tab icon={<DsTranslateIcon size={18} sx={{ color: 'currentColor', mr: 0.75 }} />} iconPosition="start"
-              label="Text translation" />
-            <Tab icon={<DsDocumentUploadIcon size={18} sx={{ color: 'currentColor', mr: 0.75 }} />} iconPosition="start"
-              label="File translation" />
-          </Tabs>
-          <Box sx={{ flex: 1 }} />
-          {/* Settings button — opens Domain/Tone dialog */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mr: 1 }}>
-            <Typography variant="caption" color="text.secondary">Domain:</Typography>
-            <Box onClick={openSettings} sx={{
-              bgcolor: blue[500], color: '#fff', height: 24, fontSize: '0.75rem',
-              cursor: 'pointer', borderRadius: '4px', fontWeight: 600,
-              px: '8px', display: 'inline-flex', alignItems: 'center',
-              letterSpacing: '0.4px', lineHeight: 1.3,
-              '&:hover': { bgcolor: blue[600] }, userSelect: 'none',
+            <Tabs value={mainTab} onChange={(_, v) => setMainTab(v)} sx={{
+              minHeight: SN,
+              '& .MuiTab-root': { minHeight: SN, py: 0, px: 2, fontSize: '0.875rem', color: blueGray[500] },
+              '& .Mui-selected': { color: '#27336F !important' },
+              '& .MuiTabs-indicator': { bgcolor: '#27336F', height: 2 },
             }}>
-              {domain}
+              <Tab icon={<DsTranslateIcon size={18} sx={{ color: 'currentColor', mr: 0.75 }} />} iconPosition="start"
+                label="Text translation" />
+              <Tab icon={<DsDocumentUploadIcon size={18} sx={{ color: 'currentColor', mr: 0.75 }} />} iconPosition="start"
+                label="File translation" />
+            </Tabs>
+            <Box sx={{ flex: 1 }} />
+            {/* Domain / Tone chips */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mr: 1 }}>
+              <Typography variant="caption" color="text.secondary">Domain:</Typography>
+              <Box onClick={openSettings} sx={{
+                bgcolor: blue[500], color: '#fff', height: 24, fontSize: '0.75rem',
+                cursor: 'pointer', borderRadius: '4px', fontWeight: 600,
+                px: '8px', display: 'inline-flex', alignItems: 'center',
+                letterSpacing: '0.4px', lineHeight: 1.3,
+                '&:hover': { bgcolor: blue[600] }, userSelect: 'none',
+              }}>
+                {domain}
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>Tone:</Typography>
+              <Box onClick={openSettings} sx={{
+                bgcolor: blue[500], color: '#fff', height: 24, fontSize: '0.75rem',
+                cursor: 'pointer', borderRadius: '4px', fontWeight: 600,
+                px: '8px', display: 'inline-flex', alignItems: 'center',
+                letterSpacing: '0.4px', lineHeight: 1.3,
+                '&:hover': { bgcolor: blue[600] }, userSelect: 'none',
+              }}>
+                {tone}
+              </Box>
             </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>Tone:</Typography>
-            <Box onClick={openSettings} sx={{
-              bgcolor: blue[500], color: '#fff', height: 24, fontSize: '0.75rem',
-              cursor: 'pointer', borderRadius: '4px', fontWeight: 600,
-              px: '8px', display: 'inline-flex', alignItems: 'center',
-              letterSpacing: '0.4px', lineHeight: 1.3,
-              '&:hover': { bgcolor: blue[600] }, userSelect: 'none',
-            }}>
-              {tone}
-            </Box>
-          </Box>
           </Box>
         </Box>
 
-        {/* Spacer */}
-        <Box sx={{ height: H + SN, flexShrink: 0 }} />
+        {/* Spacer — accounts for fixed headers */}
+        <Box sx={{ height: { xs: H, sm: H + SN }, flexShrink: 0 }} />
 
         {/* ══ Page body ════════════════════════════════════════════════════════ */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column',
           bgcolor: 'background.default', maxWidth: 1400, width: '100%', mx: 'auto' }}>
 
-          {/* Language bar — swap icon exactly at center */}
+          {/* Language bar */}
           <Box ref={langBarRef} sx={{
             bgcolor: 'background.default',
             px: { xs: 2, sm: 3, md: 4 },
-            py: 2,
+            py: { xs: 1, sm: 2 },
             display: 'flex', alignItems: 'center',
           }}>
-            {/* Source half — right-aligned so button sits just left of center */}
             <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-              <LangBtn value={sourceLang} anchor={srcA} setAnchor={setSrcA}
-                options={SOURCE_LANGS} onChange={setSourceLang} containerRef={langBarRef} placeholder='Search for source language' />
+              <LangBtn
+                value={sourceLang}
+                anchor={srcA}
+                setAnchor={setSrcA}
+                options={SOURCE_LANGS}
+                onChange={setSourceLang}
+                containerRef={langBarRef}
+                placeholder="Search for source language"
+                ariaLabel={`Source language: ${sourceLang}`}
+              />
             </Box>
-            {/* Swap — exactly at center point */}
             <Tooltip title="Swap languages">
-              <IconButton size="small" onClick={handleSwap}
-                sx={{ color: 'rgba(59,55,81,0.54)', width: 36, height: 36, mx: 0.5,
-                  '&:hover': { bgcolor: blueGray[100], color: blueGray[700] } }}>
+              <IconButton
+                size="small"
+                onClick={handleSwap}
+                aria-label="Swap languages"
+                sx={{
+                  color: 'rgba(59,55,81,0.54)', width: 36, height: 36, mx: 0.5,
+                  '&:hover': { bgcolor: blueGray[100], color: blueGray[700] },
+                }}>
                 <SwapHorizIcon sx={{ fontSize: 22 }} />
               </IconButton>
             </Tooltip>
-            {/* Target half — left-aligned so button sits just right of center */}
             <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-              <LangBtn value={targetLang} anchor={tgtA} setAnchor={setTgtA}
-                options={TARGET_LANGS} onChange={setTargetLang} containerRef={langBarRef} placeholder='Search for target language' />
+              <LangBtn
+                value={targetLang}
+                anchor={tgtA}
+                setAnchor={setTgtA}
+                options={TARGET_LANGS}
+                onChange={setTargetLang}
+                containerRef={langBarRef}
+                placeholder="Search for target language"
+                ariaLabel={`Target language: ${targetLang}`}
+              />
             </Box>
           </Box>
 
-          {/* Two-column layout */}
+          {/* ══ Main content — single column on mobile, two columns on desktop ═ */}
           <Box sx={{
             display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            flexWrap: { xs: 'nowrap', sm: 'wrap' },
             px: { xs: 2, sm: 3, md: 4 },
-            pt: 0, pb: 2,
+            pt: 0,
+            pb: { xs: '80px', sm: 2 }, // 80px bottom padding on mobile for bottom nav
             gap: 2,
-            flexWrap: 'wrap',
             alignItems: 'flex-start',
           }}>
 
             {/* ── Source column ── */}
-            <Box sx={{ flex: '1 1 400px', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{
+              flex: '1 1 400px',
+              width: { xs: '100%', sm: 'auto' },
+              minWidth: 0,
+              display: 'flex', flexDirection: 'column',
+            }}>
               <Paper elevation={0} className="fluent-source-panel" sx={{
                 position: 'relative',
                 border: '0.8px solid rgba(59,55,81,0.18)',
@@ -759,13 +842,15 @@ export default function App() {
                 transition: 'box-shadow 0.5s',
                 '&:hover': { boxShadow: '0px 10px 20px 0px rgba(0,0,0,0.08)' },
                 display: 'flex', flexDirection: 'column', borderRadius: '4px',
-                minHeight: 380,
+                minHeight: { xs: 220, sm: 380 },
               }}>
                 <textarea
                   ref={taRef}
                   className="fs-ta"
                   value={sourceText}
                   placeholder="Start typing or paste content here"
+                  aria-label="Source text"
+                  aria-describedby={!canTranslate ? 'translate-hint' : undefined}
                   onChange={(e) => {
                     const v = e.target.value.slice(0, CHAR_LIMIT);
                     setSourceText(v);
@@ -773,43 +858,76 @@ export default function App() {
                   }}
                   style={{
                     flex: 1, border: 'none', outline: 'none', resize: 'none',
-                    padding: '20px 56px 12px 20px',
-                    fontSize: '1.25rem', lineHeight: 1.6,
+                    padding: isMobile ? '16px 52px 10px 16px' : '20px 56px 12px 20px',
+                    fontSize: isMobile ? '1rem' : '1.25rem',
+                    lineHeight: 1.6,
                     color: 'inherit', backgroundColor: 'transparent',
                     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif',
-                    width: '100%', boxSizing: 'border-box', minHeight: 320,
+                    width: '100%', boxSizing: 'border-box',
+                    minHeight: isMobile ? 160 : 320,
                   }}
                 />
+
+                {/* Paste / Clear icon — inside container, top-right */}
                 {!sourceText
                   ? <Tooltip title="Paste from clipboard">
-                      <IconButton size="large" onClick={handlePaste}
-                        sx={{ position: 'absolute', top: 8, right: 8, color: blueGray[400],
-                          '&:hover': { color: blueGray[700] } }}>
+                      <IconButton
+                        size="large"
+                        onClick={handlePaste}
+                        aria-label="Paste from clipboard"
+                        sx={{
+                          position: 'absolute', top: 8, right: 8,
+                          color: blueGray[400], '&:hover': { color: blueGray[700] },
+                        }}>
                         <ContentPasteIcon sx={{ fontSize: 24 }} />
                       </IconButton>
                     </Tooltip>
                   : <Tooltip title="Clear">
-                      <IconButton size="large" onClick={handleClear}
-                        sx={{ position: 'absolute', top: 8, right: 8, color: blueGray[400],
-                          '&:hover': { color: blueGray[700] } }}>
+                      <IconButton
+                        size="large"
+                        onClick={handleClear}
+                        aria-label="Clear text"
+                        sx={{
+                          position: 'absolute', top: 8, right: 8,
+                          color: blueGray[400], '&:hover': { color: blueGray[700] },
+                        }}>
                         <CloseIcon sx={{ fontSize: 24 }} />
                       </IconButton>
                     </Tooltip>
                 }
-                <Typography variant="caption"
-                  sx={{ px: '20px', pb: '14px', pt: '6px', color: blueGray[400], display: 'block', flexShrink: 0 }}>
+
+                {/* Character counter — inside container, bottom-left */}
+                <Typography
+                  variant="caption"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  sx={{
+                    px: { xs: '16px', sm: '20px' },
+                    pb: { xs: '12px', sm: '14px' },
+                    pt: '6px',
+                    color: blueGray[400],
+                    display: 'block',
+                    flexShrink: 0,
+                  }}>
                   {charsLeft.toLocaleString()} characters left.
                 </Typography>
               </Paper>
 
-              {/* Checkbox + Translate — 16px below panel */}
+              {/* ── Action row: Match company language + Translate ── */}
               <Box sx={{ mt: '16px', display: 'flex', alignItems: 'center' }}>
                 <FormControlLabel
                   control={
-                    <Checkbox size="small" checked={ragEnabled}
+                    <Checkbox
+                      size="small"
+                      checked={ragEnabled}
                       onChange={(e) => handleRagCheck(e.target.checked)}
-                      sx={{ color: blueGray[400], p: '4px',
-                        '&.Mui-checked': { color: blue[500] } }} />
+                      inputProps={{ 'aria-label': 'Match company language' }}
+                      sx={{
+                        color: blueGray[400], p: '4px',
+                        '&.Mui-checked': { color: blue[500] },
+                      }}
+                    />
                   }
                   label={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -818,7 +936,7 @@ export default function App() {
                         title="It's checking your glossaries and internal reference files to keep translations consistent. It can add 3–5 seconds to processing time."
                         arrow
                       >
-                        <Box component="span" sx={{ cursor: 'help', display: 'flex', alignItems: 'center' }}>
+                        <Box component="span" sx={{ cursor: 'help', display: 'flex', alignItems: 'center' }} aria-label="More information about Match company language">
                           <DsInfoIcon size={16} sx={{ color: blueGray[400], '&:hover': { color: blueGray[600] } }} />
                         </Box>
                       </Tooltip>
@@ -828,31 +946,59 @@ export default function App() {
                 />
                 <Box sx={{ flex: 1 }} />
                 {isTranslating
-                  ? <Button variant="outlined" size="large" onClick={handleCancel}
+                  ? <Button
+                      variant="outlined"
+                      size="large"
+                      onClick={handleCancel}
+                      aria-label="Cancel translation"
                       startIcon={
-                        <CircularProgress size={15} thickness={4}
-                          sx={{ color: blueGray[600] }} />
+                        <CircularProgress
+                          size={15}
+                          thickness={4}
+                          sx={{ color: blueGray[600] }}
+                        />
                       }
-                      sx={{ borderRadius: 20, px: 3, fontWeight: 700,
+                      sx={{
+                        borderRadius: 20, px: 3, fontWeight: 700,
                         borderColor: blueGray[300], color: blueGray[700],
                         '&:hover': { borderColor: blueGray[500], bgcolor: blueGray[50] },
                         '& .MuiButton-startIcon': { mr: '6px' },
                       }}>
                       Cancel
                     </Button>
-                  : <Button variant="contained" size="large" disabled={!canTranslate} onClick={handleTranslate}
-                      sx={{ borderRadius: 20, px: 3, fontWeight: 700,
+                  : <Button
+                      variant="contained"
+                      size="large"
+                      disabled={!canTranslate}
+                      onClick={handleTranslate}
+                      aria-disabled={!canTranslate}
+                      aria-describedby={!canTranslate ? 'translate-hint' : undefined}
+                      sx={{
+                        borderRadius: 20, px: 3, fontWeight: 700,
                         bgcolor: '#27336F', color: '#fff',
                         '&:hover': { bgcolor: '#1F2A5E' },
-                        '&.Mui-disabled': { bgcolor: blueGray[200], color: blueGray[400] } }}>
+                        '&.Mui-disabled': { bgcolor: blueGray[200], color: blueGray[400] },
+                      }}>
                       Translate
                     </Button>
                 }
               </Box>
+
+              {/* ── RAG progress — mobile: rendered below action row ── */}
+              {phase === 'rag_translating' && isMobile && (
+                <Box sx={{ mt: 2 }}>
+                  <RagProgressBar />
+                </Box>
+              )}
             </Box>
 
             {/* ── Target column ── */}
-            <Box sx={{ flex: '1 1 400px', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{
+              flex: '1 1 400px',
+              width: { xs: '100%', sm: 'auto' },
+              minWidth: 0,
+              display: 'flex', flexDirection: 'column',
+            }}>
               <Paper elevation={0} sx={{
                 position: 'relative',
                 border: '0.8px solid rgba(59,55,81,0.18)',
@@ -861,35 +1007,36 @@ export default function App() {
                 transition: 'box-shadow 0.5s',
                 '&:hover': { boxShadow: '0px 10px 20px 0px rgba(0,0,0,0.08)' },
                 display: 'flex', flexDirection: 'column', borderRadius: '4px',
-                minHeight: 380,
+                minHeight: { xs: 220, sm: 380 },
               }}>
 
-                {/* ── Loading: faded prev text OR skeleton (first time) ── */}
+                {/* Loading: faded prev text OR skeleton */}
                 {isTranslating && (
                   prevTranslation
-                    ? <Box sx={{ flex: 1, p: '20px', pb: 1, opacity: 0.35, transition: 'opacity 0.2s' }}>
+                    ? <Box sx={{ flex: 1, p: { xs: '16px', sm: '20px' }, pb: 1, opacity: 0.35, transition: 'opacity 0.2s' }}>
                         <Typography variant="body1"
-                          sx={{ color: 'text.primary', lineHeight: 1.6, fontSize: '1.25rem' }}>
+                          sx={{ color: 'text.primary', lineHeight: 1.6, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                           {prevTranslation}
                         </Typography>
                       </Box>
-                    : <Box sx={{ flex: 1, p: '20px' }}>
+                    : <Box sx={{ flex: 1, p: { xs: '16px', sm: '20px' } }}>
                         <Skeleton variant="text" width="92%"
-                          sx={{ fontSize: '1.25rem', mb: 1, borderRadius: '4px',
-                            bgcolor: blueGray[200] }} />
+                          sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, mb: 1, borderRadius: '4px', bgcolor: blueGray[200] }} />
                         <Skeleton variant="text" width="75%"
-                          sx={{ fontSize: '1.25rem', mb: 1, borderRadius: '4px',
-                            bgcolor: blueGray[200] }} />
+                          sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, mb: 1, borderRadius: '4px', bgcolor: blueGray[200] }} />
                         <Skeleton variant="text" width="60%"
-                          sx={{ fontSize: '1.25rem', borderRadius: '4px',
-                            bgcolor: blueGray[200] }} />
+                          sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, borderRadius: '4px', bgcolor: blueGray[200] }} />
                       </Box>
                 )}
 
                 {hasResult && (
-                  <Box sx={{ flex: 1, p: '20px', pb: 1, overflow: 'auto' }}>
+                  <Box
+                    aria-live="polite"
+                    aria-atomic="false"
+                    sx={{ flex: 1, p: { xs: '16px', sm: '20px' }, pb: 1, overflow: 'auto' }}
+                  >
                     <Typography variant="body1"
-                      sx={{ color: 'text.primary', lineHeight: 1.6, fontSize: '1.25rem' }}>
+                      sx={{ color: 'text.primary', lineHeight: 1.6, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                       {translation}
                     </Typography>
                   </Box>
@@ -897,9 +1044,13 @@ export default function App() {
 
                 {!isTranslating && !hasResult && <Box sx={{ flex: 1 }} />}
 
-                {/* Bottom row: chip + copy icon — visible during result AND rag loading */}
-                <Box sx={{ px: '20px', pb: '14px', pt: '10px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                {/* Bottom row: status chip + copy icon */}
+                <Box sx={{
+                  px: { xs: '16px', sm: '20px' },
+                  pb: { xs: '12px', sm: '14px' },
+                  pt: '10px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
                   {phase === 'rag_translating' && prevTranslation
                     ? <Box sx={{
                         bgcolor: blue[500], color: '#fff',
@@ -917,7 +1068,7 @@ export default function App() {
                             px: '8px', py: '4px', borderRadius: '4px',
                             display: 'inline-flex', alignItems: 'center', flexShrink: 0,
                           }}>Matched company language</Box>
-                        : <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        : <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                             <Box sx={{
                               bgcolor: 'rgba(59,55,81,0.08)',
                               color: 'rgba(59,55,81,0.87)',
@@ -944,7 +1095,11 @@ export default function App() {
                   {(hasResult || phase === 'rag_translating') && (
                     <Tooltip title="Copy translation">
                       <span>
-                        <IconButton size="large" onClick={handleCopy} disabled={!hasResult}
+                        <IconButton
+                          size="large"
+                          onClick={handleCopy}
+                          disabled={!hasResult}
+                          aria-label="Copy translation"
                           sx={{ color: blueGray[400], '&:hover': { color: blueGray[700] } }}>
                           <ContentCopyIcon sx={{ fontSize: 24 }} />
                         </IconButton>
@@ -954,36 +1109,18 @@ export default function App() {
                 </Box>
               </Paper>
 
-
-
-              {/* ── RAG progress bar — centered with Translate button ── */}
-              {phase === 'rag_translating' && (
-                <Box sx={{ mt: '27px', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Typography variant="caption" fontWeight={600}
-                    sx={{ color: 'text.primary', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                    {RAG_STEPS[ragStep]}
-                  </Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={RAG_PROGRESS[ragStep]}
-                    sx={{
-                      flex: 1, height: 4, borderRadius: 2,
-                      bgcolor: blueGray[200],
-                      '& .MuiLinearProgress-bar': { bgcolor: blue[500], borderRadius: 2, transition: 'transform 0.8s ease' },
-                    }}
-                  />
-                  <Typography variant="caption" fontWeight={600}
-                    sx={{ color: blueGray[500], flexShrink: 0, minWidth: 32, textAlign: 'right' }}>
-                    {RAG_PROGRESS[ragStep]}%
-                  </Typography>
+              {/* ── RAG progress — desktop: below target panel ── */}
+              {phase === 'rag_translating' && !isMobile && (
+                <Box sx={{ mt: '27px' }}>
+                  <RagProgressBar />
                 </Box>
               )}
 
-              {/* Alert banners — 16px below target panel, aligned with target column */}
+              {/* ── Offer banner ── */}
               {showOffer && (
                 <Box sx={{ mt: '16px', display: 'flex', alignItems: 'flex-start', gap: 1.5,
                   p: 2, bgcolor: blue[50], border: `1px solid ${blue[200]}`, borderRadius: '4px' }}>
-                  <AutoAwesomeIcon sx={{ color: blue[500], fontSize: 18, mt: '2px', flexShrink: 0 }} />
+                  <AutoAwesomeIcon sx={{ color: blue[500], fontSize: 18, mt: '2px', flexShrink: 0 }} aria-hidden="true" />
                   <Box sx={{ flex: 1 }}>
                     <Typography variant="body2" color="text.primary" sx={{ fontWeight: 700 }}>
                       Need to match your company's language?
@@ -1000,10 +1137,11 @@ export default function App() {
                 </Box>
               )}
 
+              {/* ── Keep using banner ── */}
               {showKeepUsing && (
                 <Box sx={{ mt: '16px', display: 'flex', alignItems: 'flex-start', gap: 1.5,
                   p: 2, bgcolor: blue[50], border: `1px solid ${blue[200]}`, borderRadius: '4px' }}>
-                  <AutoAwesomeIcon sx={{ color: blue[500], fontSize: 18, mt: '2px', flexShrink: 0 }} />
+                  <AutoAwesomeIcon sx={{ color: blue[500], fontSize: 18, mt: '2px', flexShrink: 0 }} aria-hidden="true" />
                   <Box sx={{ flex: 1 }}>
                     <Typography variant="body2" color="text.primary" sx={{ fontWeight: 700 }}>
                       Keep future translations consistent with company language?
@@ -1028,10 +1166,13 @@ export default function App() {
           </Box>
         </Box>
 
-        {/* ══ Footer ══════════════════════════════════════════════════════════ */}
-        <Box sx={{ borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          px: 4, height: 56, flexShrink: 0 }}>
+        {/* ══ Footer — desktop only ════════════════════════════════════════════ */}
+        <Box sx={{
+          display: { xs: 'none', sm: 'flex' },
+          borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper',
+          alignItems: 'center', justifyContent: 'space-between',
+          px: 4, height: 56, flexShrink: 0,
+        }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box
               component="img"
@@ -1047,81 +1188,63 @@ export default function App() {
 
         {/* ══ Settings dialog ═══════════════════════════════════════════════════ */}
         <Dialog open={showSettings} onClose={() => setShowSettings(false)} maxWidth="xs" fullWidth
-          PaperProps={{ sx: { borderRadius: '4px' } }}>
+          PaperProps={{ sx: { borderRadius: '4px', mx: { xs: 2, sm: 'auto' } } }}>
           <DialogContent sx={{ pt: 0, px: 0, pb: 0 }}>
-            {/* Header */}
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               px: 3, pt: 2.5, pb: 2 }}>
               <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.125rem' }}>Settings</Typography>
-              <IconButton size="small" onClick={() => setShowSettings(false)}
+              <IconButton size="small" onClick={() => setShowSettings(false)} aria-label="Close settings"
                 sx={{ color: blueGray[500] }}>
                 <CloseIcon sx={{ fontSize: 20 }} />
               </IconButton>
             </Box>
             <Divider />
-
             <Box sx={{ px: 3, pt: 2.5, pb: 1 }}>
-              {/* ── Domain section ── */}
               <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
                 Domain
               </Typography>
-              <Select
-                fullWidth size="small" color="secondary"
-                value={tempDomain}
-                onChange={e => setTempDomain(e.target.value)}
-                sx={{ borderRadius: '4px' }}
-              >
+              <Select fullWidth size="small" color="secondary"
+                value={tempDomain} onChange={e => setTempDomain(e.target.value)}
+                inputProps={{ 'aria-label': 'Domain' }}
+                sx={{ borderRadius: '4px' }}>
                 {DOMAIN_OPTIONS.map(opt => (
                   <MenuItem key={opt} value={opt}>{opt}</MenuItem>
                 ))}
               </Select>
               {tempDomain === 'Custom' && (
                 <Box sx={{ mt: 1.5, mb: 1 }}>
-                  <TextField
-                    autoFocus
-                    fullWidth size="small"
-                    value={domainCustom}
-                    onChange={e => setDomainCustom(e.target.value)}
+                  <TextField autoFocus fullWidth size="small"
+                    value={domainCustom} onChange={e => setDomainCustom(e.target.value)}
                     placeholder="Define the domain you would like to use"
-                    inputProps={{ maxLength: 64 }}
+                    inputProps={{ maxLength: 64, 'aria-label': 'Custom domain' }}
                     error={domainCustom.length > 32}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '4px' } }}
-                  />
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '4px' } }} />
                   <Typography variant="caption"
                     sx={{ color: domainCustom.length > 32 ? 'error.main' : blueGray[500], mt: 0.5, display: 'block' }}>
                     {Math.max(0, 32 - domainCustom.length)} characters left.
                   </Typography>
                 </Box>
               )}
-
               <Divider sx={{ my: 2.5 }} />
-
-              {/* ── Tone of voice section ── */}
               <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
                 Tone of voice
               </Typography>
-              <Select
-                fullWidth size="small" color="secondary"
-                value={tempTone}
-                onChange={e => setTempTone(e.target.value)}
-                sx={{ borderRadius: '4px' }}
-              >
+              <Select fullWidth size="small" color="secondary"
+                value={tempTone} onChange={e => setTempTone(e.target.value)}
+                inputProps={{ 'aria-label': 'Tone of voice' }}
+                sx={{ borderRadius: '4px' }}>
                 {TONE_OPTIONS.map(opt => (
                   <MenuItem key={opt} value={opt}>{opt}</MenuItem>
                 ))}
               </Select>
               {tempTone === 'Custom' && (
                 <Box sx={{ mt: 1.5, mb: 1 }}>
-                  <TextField
-                    autoFocus
-                    fullWidth size="small"
-                    value={toneCustom}
-                    onChange={e => setToneCustom(e.target.value)}
+                  <TextField autoFocus fullWidth size="small"
+                    value={toneCustom} onChange={e => setToneCustom(e.target.value)}
                     placeholder="Define the tone of voice you would like to use"
-                    inputProps={{ maxLength: 64 }}
+                    inputProps={{ maxLength: 64, 'aria-label': 'Custom tone of voice' }}
                     error={toneCustom.length > 32}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '4px' } }}
-                  />
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '4px' } }} />
                   <Typography variant="caption"
                     sx={{ color: toneCustom.length > 32 ? 'error.main' : blueGray[500], mt: 0.5, display: 'block' }}>
                     {Math.max(0, 32 - toneCustom.length)} characters left.
@@ -1146,10 +1269,10 @@ export default function App() {
 
         {/* ══ RAG first-time dialog ════════════════════════════════════════════ */}
         <Dialog open={showRagDialog} maxWidth="xs" fullWidth
-          PaperProps={{ sx: { borderRadius: '4px !important' } }}>
+          PaperProps={{ sx: { borderRadius: '4px !important', mx: { xs: 2, sm: 'auto' } } }}>
           <DialogContent sx={{ pt: 3, pb: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <AutoAwesomeIcon sx={{ color: blue[500], fontSize: 22 }} />
+              <AutoAwesomeIcon sx={{ color: blue[500], fontSize: 22 }} aria-hidden="true" />
               <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1rem', lineHeight: 1.3 }}>
                 Match company language is on
               </Typography>
@@ -1171,11 +1294,7 @@ export default function App() {
               </Typography>
             </Box>
           </DialogContent>
-          <DialogActions sx={{
-            px: 3, py: 2,
-            bgcolor: blueGray[50],
-            borderTop: `1px solid ${blueGray[100]}`,
-          }}>
+          <DialogActions sx={{ px: 3, py: 2, bgcolor: blueGray[50], borderTop: `1px solid ${blueGray[100]}` }}>
             <Button variant="contained" onClick={handleDialogOk}
               sx={{ bgcolor: '#27336F', color: '#fff', borderRadius: 20, px: 3,
                 '&:hover': { bgcolor: '#1F2A5E' } }}>
@@ -1184,12 +1303,13 @@ export default function App() {
           </DialogActions>
         </Dialog>
 
-        {/* ══ Snackbar — Figma design: light bg, border, shadow ═══════════════ */}
+        {/* ══ Snackbar ════════════════════════════════════════════════════════ */}
         <Snackbar
           open={Boolean(snackMsg)}
           autoHideDuration={4000}
           onClose={() => setSnackMsg(null)}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          sx={{ bottom: { xs: '72px', sm: '24px' } }} // above bottom nav on mobile
         >
           <Paper elevation={0} sx={{
             display: 'flex', alignItems: 'flex-start', gap: '12px',
@@ -1199,8 +1319,7 @@ export default function App() {
             boxShadow: '0px 4px 4px 0px rgba(0,0,0,0.08)',
             px: 2, py: '6px',
             minHeight: 52, minWidth: 220, maxWidth: 420,
-          }}
->
+          }}>
             <Box sx={{ pt: '10px', flexShrink: 0 }}>
               {snackType === 'success'
                 ? <DsCheckCircleIcon size={20} sx={{ color: green[600] }} />
@@ -1215,6 +1334,99 @@ export default function App() {
             </Box>
           </Paper>
         </Snackbar>
+
+        {/* ══ Mobile bottom navigation — visible only on xs (≤600px) ══════════ */}
+        <Box
+          component="nav"
+          aria-label="Main navigation"
+          sx={{
+            display: { xs: 'flex', sm: 'none' },
+            position: 'fixed', bottom: 0, left: 0, right: 0,
+            zIndex: 1200, height: 57,
+            borderTop: '1px solid', borderColor: 'divider',
+            bgcolor: 'background.paper',
+            alignItems: 'stretch',
+          }}>
+          {/* Text translation tab */}
+          <Box
+            role="button"
+            tabIndex={0}
+            aria-label="Text translation"
+            aria-pressed={mainTab === 0}
+            onClick={() => setMainTab(0)}
+            onKeyDown={(e) => e.key === 'Enter' && setMainTab(0)}
+            sx={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: '3px',
+              cursor: 'pointer',
+              borderTop: mainTab === 0 ? '2px solid #27336F' : '2px solid transparent',
+              color: mainTab === 0 ? '#27336F' : blueGray[400],
+              '&:hover': { bgcolor: blueGray[50] },
+              userSelect: 'none',
+              transition: 'color 0.15s',
+            }}>
+            <DsTranslateIcon size={20} />
+            <Typography variant="caption" sx={{
+              fontSize: '0.6875rem', fontWeight: mainTab === 0 ? 700 : 400,
+              color: 'inherit', lineHeight: 1,
+            }}>
+              Text
+            </Typography>
+          </Box>
+
+          {/* File translation tab */}
+          <Box
+            role="button"
+            tabIndex={0}
+            aria-label="File translation"
+            aria-pressed={mainTab === 1}
+            onClick={() => setMainTab(1)}
+            onKeyDown={(e) => e.key === 'Enter' && setMainTab(1)}
+            sx={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: '3px',
+              cursor: 'pointer',
+              borderTop: mainTab === 1 ? '2px solid #27336F' : '2px solid transparent',
+              color: mainTab === 1 ? '#27336F' : blueGray[400],
+              '&:hover': { bgcolor: blueGray[50] },
+              userSelect: 'none',
+              transition: 'color 0.15s',
+            }}>
+            <DsDocumentUploadIcon size={20} />
+            <Typography variant="caption" sx={{
+              fontSize: '0.6875rem', fontWeight: mainTab === 1 ? 700 : 400,
+              color: 'inherit', lineHeight: 1,
+            }}>
+              File
+            </Typography>
+          </Box>
+
+          {/* Settings gear */}
+          <Box
+            role="button"
+            tabIndex={0}
+            aria-label="Open settings"
+            onClick={openSettings}
+            onKeyDown={(e) => e.key === 'Enter' && openSettings()}
+            sx={{
+              width: 72, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: '3px',
+              cursor: 'pointer',
+              borderTop: '2px solid transparent',
+              color: blueGray[400],
+              '&:hover': { bgcolor: blueGray[50], color: blueGray[700] },
+              userSelect: 'none',
+              transition: 'color 0.15s',
+            }}>
+            <SettingsOutlinedIcon sx={{ fontSize: 20 }} />
+            <Typography variant="caption" sx={{
+              fontSize: '0.6875rem', fontWeight: 400,
+              color: 'inherit', lineHeight: 1,
+            }}>
+              Settings
+            </Typography>
+          </Box>
+        </Box>
 
       </Box>
     </ThemeProvider>
