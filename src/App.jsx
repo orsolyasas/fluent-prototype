@@ -525,7 +525,7 @@ export default function App() {
       <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 
         {/* ══ AppBar ══════════════════════════════════════════════════════════ */}
-        <AppBar position="fixed" elevation={0} sx={{ bgcolor: '#27336F', height: H, zIndex: 1300 }}>
+        <AppBar position={isMobile ? 'relative' : 'fixed'} elevation={0} sx={{ bgcolor: '#27336F', height: H, zIndex: 1300 }}>
           <Toolbar sx={{ minHeight: `${H}px !important`, px: { xs: 2, sm: 3 }, gap: 1 }}>
             <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '1.125rem', letterSpacing: '-0.02em', mr: 'auto' }}>
               Fluent
@@ -614,8 +614,8 @@ export default function App() {
           </Box>
         </Box>
 
-        {/* Spacer */}
-        <Box sx={{ height: { xs: H, sm: H + SN }, flexShrink: 0 }} />
+        {/* Spacer — csak desktopon kell, ahol az AppBar fixed */}
+        <Box sx={{ display: { xs: 'none', sm: 'block' }, height: H + SN, flexShrink: 0 }} />
 
         {/* ══ Page body ════════════════════════════════════════════════════════ */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: 'background.default', maxWidth: 1400, width: '100%', mx: 'auto' }}>
@@ -667,7 +667,7 @@ export default function App() {
           }}>
 
             {/* ── Source column ── */}
-            <Box sx={{ flex: '1 1 400px', width: { xs: '100%', sm: 'auto' }, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ flex: { xs: '0 0 auto', sm: '1 1 400px' }, width: { xs: '100%', sm: 'auto' }, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <Paper elevation={0} className="fluent-source-panel" sx={{
                 position: 'relative',
                 border: '0.8px solid rgba(59,55,81,0.18)',
@@ -848,7 +848,7 @@ export default function App() {
             </Box>
 
             {/* ── Target column ── */}
-            <Box sx={{ flex: '1 1 400px', width: { xs: '100%', sm: 'auto' }, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ flex: { xs: '0 0 auto', sm: '1 1 400px' }, width: { xs: '100%', sm: 'auto' }, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <Paper elevation={0} sx={{
                 position: 'relative',
                 border: '0.8px solid rgba(59,55,81,0.18)',
@@ -857,7 +857,7 @@ export default function App() {
                 transition: 'box-shadow 0.5s',
                 '&:hover': { boxShadow: '0px 10px 20px 0px rgba(0,0,0,0.08)' },
                 display: 'flex', flexDirection: 'column', borderRadius: '4px',
-                minHeight: { xs: 'unset', sm: 380 },
+                minHeight: { xs: 220, sm: 380 },
               }}>
                 {isTranslating && (
                   prevTranslation
@@ -965,7 +965,7 @@ export default function App() {
         </Box>
 
         {/* ══ Footer — desktop only ════════════════════════════════════════════ */}
-        <Box sx={{ display: { xs: 'none', sm: 'flex' }, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', alignItems: 'center', justifyContent: 'space-between', px: 4, height: 56, flexShrink: 0 }}>
+        <Box sx={{ display: 'flex', borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', alignItems: 'center', justifyContent: 'space-between', px: { xs: 2, sm: 4 }, height: 56, flexShrink: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box component="img" src={`${import.meta.env.BASE_URL}${darkMode ? 'logo-dark.svg' : 'logo-light.svg'}`} alt="Language Intelligence" sx={{ height: 28 }} />
           </Box>
