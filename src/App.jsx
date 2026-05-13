@@ -371,12 +371,34 @@ export default function App() {
   const addRecentTgt = (lang) => {
     setRecentTgtLangs(prev => [lang, ...prev.filter(l => l !== lang)].slice(0, 3));
   };
+
+  // Google Translate logika: ütköző nyelvpár esetén swap
+  const handleSrcLangChange = (val) => {
+    if (val === targetLang) {
+      // A régi source kerül a target-re
+      setTargetLang(sourceLang);
+      addRecentTgt(sourceLang);
+    }
+    setSourceLang(val);
+    addRecentSrc(val);
+  };
+
+  const handleTgtLangChange = (val) => {
+    if (val === sourceLang) {
+      // A régi target kerül a source-ra
+      setSourceLang(targetLang);
+      addRecentSrc(targetLang);
+    }
+    setTargetLang(val);
+    addRecentTgt(val);
+  };
   const [domain, setDomain] = useState('Match source');
   const [tone, setTone]     = useState('Match source');
 
   const [sourceText, setSourceText] = useState(SOURCE_TEXT);
-  const taRef      = useRef(null);
-  const langBarRef = useRef(null);
+  const taRef         = useRef(null);
+  const langBarRef    = useRef(null);
+  const targetPanelRef = useRef(null);
 
   const [ragEnabled, setRagEnabled]         = useState(false);
   const [ragDialogShown, setRagDialogShown] = useState(false);
@@ -405,6 +427,14 @@ export default function App() {
   const [srcA, setSrcA]     = useState(null);
   const [tgtA, setTgtA]     = useState(null);
   const [avatarA, setAvatarA] = useState(null);
+
+  // Fókusz a target panelre mobilon amikor megjelenik a fordítás
+  useEffect(() => {
+    const isResult = phase === 'result_speed' || phase === 'result_rag_first' || phase === 'result_rag';
+    if (isMobile && isResult && targetPanelRef.current) {
+      targetPanelRef.current.focus();
+    }
+  }, [phase, isMobile]);
 
   // Auto-resize textarea — csak mobilon
   useEffect(() => {
@@ -611,7 +641,12 @@ export default function App() {
             <Tooltip title="Help">
               <IconButton size="small" aria-label="Help"
                 sx={{ color: 'rgba(255,255,255,0.65)', '&:hover': { color: '#fff' } }}>
-                <HelpOutlineIcon sx={{ fontSize: 19 }} />
+                <Box component="svg" width={19} height={19} viewBox="0 0 24 24" fill="none"
+                  xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M12 21.998C6.486 21.998 2 17.513 2 11.998C2 6.48499 6.486 1.99799 12 1.99799C17.514 1.99799 22 6.48399 22 11.998C22 17.513 17.514 21.998 12 21.998ZM12 3.99799C7.589 3.99799 4 7.58699 4 11.998C4 16.409 7.589 19.998 12 19.998C16.411 19.998 20 16.409 20 11.998C20 7.58699 16.411 3.99799 12 3.99799Z" fill="currentColor"/>
+                  <path d="M13 14.998H11V11.998H12C13.104 11.998 14 11.101 14 9.99799C14 8.89399 13.104 7.99799 12 7.99799C10.896 7.99799 10 8.89399 10 9.99799H8C8 7.79299 9.795 5.99799 12 5.99799C14.205 5.99799 16 7.79299 16 9.99799C16 11.858 14.723 13.426 13 13.873V14.998Z" fill="currentColor"/>
+                  <path d="M12 18.248C12.6904 18.248 13.25 17.6883 13.25 16.998C13.25 16.3076 12.6904 15.748 12 15.748C11.3096 15.748 10.75 16.3076 10.75 16.998C10.75 17.6883 11.3096 18.248 12 18.248Z" fill="currentColor"/>
+                </Box>
               </IconButton>
             </Tooltip>
 
@@ -621,10 +656,10 @@ export default function App() {
                 onKeyDown={(e) => e.key === 'Enter' && setAvatarA(e.currentTarget)}
                 sx={{
                   width: 30, height: 30, borderRadius: '50%', cursor: 'pointer',
-                  bgcolor: blue[500], color: '#fff', flexShrink: 0,
+                  bgcolor: '#fff', color: '#27336F', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '-0.01em',
-                  '&:hover': { bgcolor: blue[600] },
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' },
                 }}>AB</Box>
             </Tooltip>
 
@@ -671,13 +706,6 @@ export default function App() {
               <Tab icon={<DsDocumentUploadIcon size={18} sx={{ color: 'currentColor', mr: 0.75 }} />} iconPosition="start" label="File translation" />
             </Tabs>
             <Box sx={{ flex: 1 }} />
-            {/* Domain/Tone chipek — csak desktopon a sub-navban */}
-            <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 0.75, mr: 1 }}>
-              <Typography variant="caption" color="text.secondary">Domain:</Typography>
-              <Box onClick={openSettings} sx={chipSx}>{domain}</Box>
-              <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>Tone:</Typography>
-              <Box onClick={openSettings} sx={chipSx}>{tone}</Box>
-            </Box>
           </Box>
         </Box>
 
@@ -698,7 +726,7 @@ export default function App() {
                   exclusive
                   size="small"
                   value={sourceLang}
-                  onChange={(_, val) => { if (val) { setSourceLang(val); addRecentSrc(val); } }}
+                  onChange={(_, val) => { if (val) handleSrcLangChange(val); }}
                   aria-label="Source language"
                   sx={{ mr: 0.5 }}
                 >
@@ -724,7 +752,7 @@ export default function App() {
                 value={isMobile ? sourceLang : '▾'}
                 anchor={srcA} setAnchor={setSrcA}
                 options={SOURCE_LANGS}
-                onChange={(val) => { setSourceLang(val); addRecentSrc(val); }}
+                onChange={handleSrcLangChange}
                 containerRef={langBarRef}
                 placeholder="Search for source language"
                 ariaLabel={`Source language: ${sourceLang}. Click to search more`}
@@ -759,7 +787,7 @@ export default function App() {
                   exclusive
                   size="small"
                   value={targetLang}
-                  onChange={(_, val) => { if (val) { setTargetLang(val); addRecentTgt(val); } }}
+                  onChange={(_, val) => { if (val) handleTgtLangChange(val); }}
                   aria-label="Target language"
                   sx={{ ml: 0.5 }}
                 >
@@ -792,7 +820,7 @@ export default function App() {
             flexWrap: { xs: 'nowrap', sm: 'wrap' },
             px: { xs: 2, sm: 3, md: 4 },
             pt: 0, pb: 2, gap: 2,
-            alignItems: 'flex-start',
+            alignItems: { xs: 'flex-start', sm: 'stretch' },
           }}>
 
             {/* ── Source column ── */}
@@ -806,6 +834,7 @@ export default function App() {
                 '&:hover': { boxShadow: '0px 10px 20px 0px rgba(0,0,0,0.08)' },
                 display: 'flex', flexDirection: 'column', borderRadius: '4px',
                 minHeight: { xs: 160, sm: 380 },
+                flex: { xs: 'none', sm: 1 },
               }}>
                 {/* Domain + Tone chip — minden méretben belül */}
                 <Box sx={{ px: '16px', pt: '14px', pb: '4px', display: 'flex', alignItems: 'center' }}>
@@ -1019,16 +1048,24 @@ export default function App() {
 
             {/* ── Target column ── */}
             <Box sx={{ flex: { xs: '0 0 auto', sm: '1 1 400px' }, width: { xs: '100%', sm: 'auto' }, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-              <Paper elevation={0} sx={{
-                position: 'relative',
-                border: '0.8px solid rgba(59,55,81,0.18)',
-                bgcolor: '#FAFAFD',
-                boxShadow: '0px 2px 4px 0px rgba(0,0,0,0.08)',
-                transition: 'box-shadow 0.5s',
-                '&:hover': { boxShadow: '0px 10px 20px 0px rgba(0,0,0,0.08)' },
-                display: 'flex', flexDirection: 'column', borderRadius: '4px',
-                minHeight: { xs: 160, sm: 380 },
-              }}>
+              <Paper
+                ref={targetPanelRef}
+                tabIndex={-1}
+                aria-label="Translation result"
+                aria-live="polite"
+                elevation={0}
+                sx={{
+                  position: 'relative',
+                  border: '0.8px solid rgba(59,55,81,0.18)',
+                  bgcolor: '#FAFAFD',
+                  boxShadow: '0px 2px 4px 0px rgba(0,0,0,0.08)',
+                  transition: 'box-shadow 0.5s',
+                  '&:hover': { boxShadow: '0px 10px 20px 0px rgba(0,0,0,0.08)' },
+                  display: 'flex', flexDirection: 'column', borderRadius: '4px',
+                  minHeight: { xs: 160, sm: 380 },
+                  flex: { xs: 'none', sm: 1 },
+                  outline: 'none',
+                }}>
                 {isTranslating && (
                   prevTranslation
                     ? <Box sx={{ flex: 1, p: { xs: '16px', sm: '20px' }, pb: 1, opacity: 0.35 }}>
@@ -1085,6 +1122,11 @@ export default function App() {
                   )}
                 </Box>
               </Paper>
+
+              {/* Spacer — desktopon kiegyenlíti az action row magasságát */}
+              {!isMobile && phase !== 'rag_translating' && !showOffer && !showKeepUsing && (
+                <Box sx={{ mt: '16px', height: 52, flexShrink: 0 }} />
+              )}
 
               {/* ── RAG progress — desktop: below target panel ── */}
               {phase === 'rag_translating' && !isMobile && (
