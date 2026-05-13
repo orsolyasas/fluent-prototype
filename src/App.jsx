@@ -68,7 +68,7 @@ const SAMPLE_POOL = [
 ];
 
 const SOURCE_TEXT = SAMPLE_POOL[0].source;
-const CHAR_LIMIT  = 5000;
+const CHAR_LIMIT  = 50000;
 const ALL_SOURCE_LANGS = [
   'Autodetect language','Albanian','Albanian (Albania)','Arabic','Bosnian (Cyrillic)','Bosnian (Latin)',
   'Bulgarian','Catalan','Chinese','Chinese (Simplified)','Chinese (Traditional)','Croatian','Czech',
@@ -89,6 +89,16 @@ const TONE_OPTIONS   = ['Match source', 'Formal', 'Informal', 'Custom'];
 const RAG_STEPS    = ['Translating...', 'Checking glossary and reference files...', 'Adapting tone...', "We're almost done..."];
 const RAG_STEP_MS  = [1200, 1500, 1500, 1100];
 const RAG_PROGRESS = [0, 25, 75, 95];
+
+// ── Fake translation generator ────────────────────────────────────────────────
+function buildFakeTranslation(sourceText) {
+  const speedWords = SAMPLE_POOL.flatMap(s => s.speedDraft.split(/\s+/).filter(Boolean));
+  const ragWords   = SAMPLE_POOL.flatMap(s => s.rag.split(/\s+/).filter(Boolean));
+  const count = Math.max(1, sourceText.trim().split(/\s+/).filter(Boolean).length);
+  const speed = Array.from({ length: count }, (_, i) => speedWords[i % speedWords.length]).join(' ');
+  const rag   = Array.from({ length: count }, (_, i) => ragWords[i % ragWords.length]).join(' ');
+  return { speed, rag };
+}
 
 // ── Theme factory ─────────────────────────────────────────────────────────────
 function makeTheme(dark) {
@@ -340,8 +350,9 @@ export default function App() {
   const [ragConfirmed, setRagConfirmed]     = useState(false);
   const [ragTrialMode, setRagTrialMode]     = useState(false);
   const [ragEverTried, setRagEverTried]     = useState(false);
-  const [prevTranslation, setPrevTranslation] = useState('');
-  const [sampleIdx, setSampleIdx]             = useState(0);
+  const [prevTranslation, setPrevTranslation]   = useState('');
+  const [sampleIdx, setSampleIdx]               = useState(0);
+  const [generatedTranslation, setGeneratedTranslation] = useState({ speed: '', rag: '' });
 
   const [phase, setPhase]     = useState('idle');
   const [ragStep, setRagStep] = useState(0);
@@ -358,6 +369,14 @@ export default function App() {
   const [srcA, setSrcA]     = useState(null);
   const [tgtA, setTgtA]     = useState(null);
   const [avatarA, setAvatarA] = useState(null);
+
+  // Auto-resize textarea when sourceText changes externally (paste, clear)
+  useEffect(() => {
+    if (taRef.current) {
+      taRef.current.style.height = 'auto';
+      taRef.current.style.height = taRef.current.scrollHeight + 'px';
+    }
+  }, [sourceText]);
 
   useEffect(() => {
     if (phase !== 'translating_speed') return;
@@ -411,6 +430,8 @@ export default function App() {
   const handleTranslate = () => {
     if (!sourceText.trim()) return;
     setRagTrialMode(false);
+    const newT = buildFakeTranslation(sourceText);
+    setGeneratedTranslation(newT);
     if (hasResult) setPrevTranslation(translation);
     else setPrevTranslation('');
     if (ragEnabled) {
@@ -441,6 +462,7 @@ export default function App() {
   };
 
   const handleTryIt = () => {
+    setGeneratedTranslation(buildFakeTranslation(sourceText));
     if (hasResult) setPrevTranslation(translation);
     setRagTrialMode(true);
     setRagDialogShown(true);
@@ -477,8 +499,7 @@ export default function App() {
   };
 
   const handleCopy = () => {
-    const currentSample = SAMPLE_POOL[sampleIdx] || SAMPLE_POOL[0];
-    navigator.clipboard.writeText(isRagResult ? currentSample.rag : currentSample.speedDraft).catch(() => {});
+    navigator.clipboard.writeText(translation).catch(() => {});
     snack('Translation copied to clipboard.', 'success', 'right');
   };
 
@@ -491,8 +512,7 @@ export default function App() {
   const canTranslate  = sourceText.trim().length > 0 && !isTranslating;
   const showOffer     = isSpeedResult && !ragEnabled && !ragEverTried;
   const showKeepUsing = phase === 'result_rag_first' && ragTrialMode;
-  const currentSample = SAMPLE_POOL[sampleIdx] || SAMPLE_POOL[0];
-  const translation   = isRagResult ? currentSample.rag : currentSample.speedDraft;
+  const translation = isRagResult ? generatedTranslation.rag : generatedTranslation.speed;
   const H = 56, SN = 52;
   const placeholderColor = darkMode ? '#615D7B' : '#ACA9BD';
 
@@ -681,7 +701,7 @@ export default function App() {
                 transition: 'box-shadow 0.5s',
                 '&:hover': { boxShadow: '0px 10px 20px 0px rgba(0,0,0,0.08)' },
                 display: 'flex', flexDirection: 'column', borderRadius: '4px',
-                minHeight: { xs: 220, sm: 380 },
+                minHeight: { xs: 160, sm: 220 },
               }}>
                 <textarea
                   ref={taRef}
@@ -693,16 +713,19 @@ export default function App() {
                   onChange={(e) => {
                     const v = e.target.value.slice(0, CHAR_LIMIT);
                     setSourceText(v);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = e.target.scrollHeight + 'px';
                     if (hasResult) { setPhase('idle'); setOfferDismissed(false); }
                   }}
                   style={{
-                    flex: 1, border: 'none', outline: 'none', resize: 'none',
+                    border: 'none', outline: 'none', resize: 'none',
                     padding: isMobile ? '16px 52px 10px 16px' : '20px 56px 12px 20px',
                     fontSize: isMobile ? '1rem' : '1.25rem',
                     lineHeight: 1.6, color: 'inherit', backgroundColor: 'transparent',
                     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif',
                     width: '100%', boxSizing: 'border-box',
-                    minHeight: isMobile ? 160 : 320,
+                    minHeight: isMobile ? 160 : 280,
+                    height: 'auto', overflow: 'hidden',
                   }}
                 />
 
@@ -862,7 +885,7 @@ export default function App() {
                 transition: 'box-shadow 0.5s',
                 '&:hover': { boxShadow: '0px 10px 20px 0px rgba(0,0,0,0.08)' },
                 display: 'flex', flexDirection: 'column', borderRadius: '4px',
-                minHeight: { xs: 220, sm: 380 },
+                minHeight: { xs: 160, sm: 220 },
               }}>
                 {isTranslating && (
                   prevTranslation
@@ -880,7 +903,7 @@ export default function App() {
 
                 {hasResult && (
                   <Box aria-live="polite" aria-atomic="false"
-                    sx={{ flex: 1, p: { xs: '16px', sm: '20px' }, pb: 1, overflow: 'auto' }}>
+                    sx={{ p: { xs: '16px', sm: '20px' }, pb: 1 }}>
                     <Typography variant="body1" sx={{ color: 'text.primary', lineHeight: 1.6, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                       {translation}
                     </Typography>
