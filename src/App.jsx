@@ -6,6 +6,7 @@ import {
   Checkbox, FormControlLabel, Dialog, DialogContent, DialogActions,
   Menu, MenuItem, Snackbar, Alert, CircularProgress, LinearProgress, Skeleton, Divider,
   TextField, InputAdornment, Popover, RadioGroup, FormControl, FormLabel, Radio as MuiRadio, FormControlLabel as MuiFormControlLabel, Select, InputLabel,
+  ToggleButton, ToggleButtonGroup,
   useMediaQuery,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -129,6 +130,23 @@ function makeTheme(dark) {
       MuiAppBar:        { styleOverrides: { root: { boxShadow: 'none' } } },
       MuiChip:          { styleOverrides: { root: { fontWeight: 600 } } },
       MuiMenuItem:      { styleOverrides: { root: { fontSize: '0.875rem' } } },
+      MuiToggleButtonGroup: {
+        styleOverrides: {
+          root: { padding: 0, backgroundColor: 'transparent', border: 'none' },
+          grouped: { border: 'none !important', margin: '0 !important' },
+        },
+      },
+      MuiToggleButton: {
+        styleOverrides: {
+          root: {
+            textTransform: 'none', fontWeight: 400, fontSize: '0.875rem',
+            border: 'none', borderRadius: '25px !important',
+            lineHeight: 1.4, letterSpacing: '0.15px',
+            '&.Mui-selected': { color: '#fff', backgroundColor: blue[500], fontWeight: 600 },
+            '&.Mui-selected:hover': { backgroundColor: blue[600] },
+          },
+        },
+      },
       MuiTooltip: {
         defaultProps: {
           arrow: true,
@@ -144,7 +162,7 @@ function makeTheme(dark) {
 }
 
 // ── Language selector ─────────────────────────────────────────────────────────
-function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder, containerRef, ariaLabel }) {
+function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder, containerRef, ariaLabel, dropdownOnly }) {
   const [search, setSearch] = React.useState('');
   const isMobile = useMediaQuery('(max-width:599.95px)');
   const filtered = search ? options.filter(l => l.toLowerCase().includes(search.toLowerCase())) : options;
@@ -153,26 +171,35 @@ function LangBtn({ value, anchor, setAnchor, options, onChange, placeholder, con
 
   return (
     <>
-      <Button size="small"
-        aria-label={ariaLabel || value}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16, ml: '-2px', transform: open ? 'rotate(180deg)' : 'none' }} />}
-        onClick={(e) => setAnchor(e.currentTarget)}
-        sx={{
-          color: blue[500], fontWeight: 600,
-          fontSize: { xs: '0.875rem', sm: '0.9375rem' },
-          textTransform: 'none',
-          px: { xs: '8px', sm: '12px' }, py: '10px',
-          borderRadius: '100px', border: 'none', lineHeight: 1.2,
-          maxWidth: { xs: '140px', sm: 'none' },
-          '& .MuiButton-endIcon': { flexShrink: 0 },
-          '&:hover': { bgcolor: blue[50], color: blue[600] },
-        }}>
-        <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-          {value}
-        </Box>
-      </Button>
+      {dropdownOnly
+        ? <Tooltip title="Search more languages">
+            <IconButton size="small" onClick={(e) => setAnchor(e.currentTarget)}
+              aria-label={ariaLabel} aria-expanded={open} aria-haspopup="listbox"
+              sx={{ color: blueGray[500], width: 32, height: 32, '&:hover': { bgcolor: blueGray[100], color: blueGray[700] } }}>
+              <KeyboardArrowDownIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+        : <Button size="small"
+            aria-label={ariaLabel || value}
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16, ml: '-2px', transform: open ? 'rotate(180deg)' : 'none' }} />}
+            onClick={(e) => setAnchor(e.currentTarget)}
+            sx={{
+              color: blue[500], fontWeight: 600,
+              fontSize: { xs: '0.875rem', sm: '0.9375rem' },
+              textTransform: 'none',
+              px: { xs: '8px', sm: '12px' }, py: '10px',
+              borderRadius: '100px', border: 'none', lineHeight: 1.2,
+              maxWidth: { xs: '140px', sm: 'none' },
+              '& .MuiButton-endIcon': { flexShrink: 0 },
+              '&:hover': { bgcolor: blue[50], color: blue[600] },
+            }}>
+            <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+              {value}
+            </Box>
+          </Button>
+      }
       <Popover
         open={open}
         anchorEl={containerRef ? containerRef.current : anchor}
@@ -333,8 +360,17 @@ export default function App() {
   const isMobile = useMediaQuery('(max-width:599.95px)');
 
   const [mainTab, setMainTab] = useState(0);
-  const [sourceLang, setSourceLang] = useState('English (United States)');
-  const [targetLang, setTargetLang] = useState('Hungarian');
+  const [sourceLang, setSourceLang] = useState('Hungarian');
+  const [targetLang, setTargetLang] = useState('English (United States)');
+  const [recentSrcLangs, setRecentSrcLangs] = useState(['Spanish', 'English (Canada)', 'Hungarian']);
+  const [recentTgtLangs, setRecentTgtLangs] = useState(['English (Canada)', 'French (Canada)', 'English (United States)']);
+
+  const addRecentSrc = (lang) => {
+    setRecentSrcLangs(prev => [lang, ...prev.filter(l => l !== lang)].slice(0, 3));
+  };
+  const addRecentTgt = (lang) => {
+    setRecentTgtLangs(prev => [lang, ...prev.filter(l => l !== lang)].slice(0, 3));
+  };
   const [domain, setDomain] = useState('Match source');
   const [tone, setTone]     = useState('Match source');
 
@@ -370,13 +406,13 @@ export default function App() {
   const [tgtA, setTgtA]     = useState(null);
   const [avatarA, setAvatarA] = useState(null);
 
-  // Auto-resize textarea when sourceText changes externally (paste, clear)
+  // Auto-resize textarea — csak mobilon
   useEffect(() => {
-    if (taRef.current) {
+    if (isMobile && taRef.current) {
       taRef.current.style.height = 'auto';
       taRef.current.style.height = taRef.current.scrollHeight + 'px';
     }
-  }, [sourceText]);
+  }, [sourceText, isMobile]);
 
   useEffect(() => {
     if (phase !== 'translating_speed') return;
@@ -482,7 +518,14 @@ export default function App() {
     snack("You're no longer using company language in translations.", 'info');
   };
 
-  const handleSwap = () => { const t = sourceLang; setSourceLang(targetLang); setTargetLang(t); };
+  const handleSwap = () => {
+    const prevSrc = sourceLang;
+    const prevTgt = targetLang;
+    setSourceLang(prevTgt);
+    setTargetLang(prevSrc);
+    addRecentSrc(prevTgt);
+    addRecentTgt(prevSrc);
+  };
 
   const handleClear = () => {
     setSourceText(''); setPhase('idle'); setOfferDismissed(false);
@@ -645,39 +688,109 @@ export default function App() {
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: 'background.default', maxWidth: 1400, width: '100%', mx: 'auto' }}>
 
           {/* Language bar */}
-          <Box ref={langBarRef} sx={{ bgcolor: 'background.default', px: { xs: 2, sm: 3, md: 4 }, py: { xs: 1, sm: 2 }, display: 'flex', alignItems: 'center' }}>
-            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-              <LangBtn value={sourceLang} anchor={srcA} setAnchor={setSrcA}
-                options={SOURCE_LANGS} onChange={setSourceLang} containerRef={langBarRef}
-                placeholder="Search for source language" ariaLabel={`Source language: ${sourceLang}`} />
+          <Box ref={langBarRef} sx={{ bgcolor: 'background.default', px: { xs: 2, sm: 3, md: 4 }, py: { xs: 1, sm: 2 }, display: 'flex', alignItems: 'center', gap: { xs: 0, sm: 0.5 } }}>
+
+            {/* Source side */}
+            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+              {/* Desktop: recent language pills */}
+              {!isMobile && (
+                <ToggleButtonGroup
+                  exclusive
+                  value={sourceLang}
+                  onChange={(_, val) => { if (val) { setSourceLang(val); addRecentSrc(val); } }}
+                  aria-label="Source language"
+                  sx={{ mr: 0.5 }}
+                >
+                  {recentSrcLangs.map(lang => (
+                    <ToggleButton key={lang} value={lang}
+                      aria-label={`Source language: ${lang}`}
+                      sx={{ px: 1.5, py: 0.75, color: sourceLang === lang ? '#fff' : 'text.primary' }}>
+                      {lang}
+                    </ToggleButton>
+                  ))}
+                </ToggleButtonGroup>
+              )}
+              {/* Dropdown: zoek naar meer talen */}
+              <LangBtn
+                value={isMobile ? sourceLang : '▾'}
+                anchor={srcA} setAnchor={setSrcA}
+                options={SOURCE_LANGS}
+                onChange={(val) => { setSourceLang(val); addRecentSrc(val); }}
+                containerRef={langBarRef}
+                placeholder="Search for source language"
+                ariaLabel={`Source language: ${sourceLang}. Click to search more`}
+                dropdownOnly={!isMobile}
+              />
             </Box>
+
+            {/* Swap */}
             <Tooltip title="Swap languages">
               <IconButton size="small" onClick={handleSwap} aria-label="Swap languages"
-                sx={{ color: 'rgba(59,55,81,0.54)', width: 36, height: 36, mx: 0.5, '&:hover': { bgcolor: blueGray[100], color: blueGray[700] } }}>
+                sx={{ color: 'rgba(59,55,81,0.54)', width: 36, height: 36, mx: 0.5, flexShrink: 0, '&:hover': { bgcolor: blueGray[100], color: blueGray[700] } }}>
                 <SwapHorizIcon sx={{ fontSize: 22 }} />
               </IconButton>
             </Tooltip>
-            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-              <LangBtn value={targetLang} anchor={tgtA} setAnchor={setTgtA}
-                options={TARGET_LANGS} onChange={setTargetLang} containerRef={langBarRef}
-                placeholder="Search for target language" ariaLabel={`Target language: ${targetLang}`} />
+
+            {/* Target side */}
+            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+              {/* Dropdown: zoek naar meer talen */}
+              <LangBtn
+                value={isMobile ? targetLang : '▾'}
+                anchor={tgtA} setAnchor={setTgtA}
+                options={TARGET_LANGS}
+                onChange={(val) => { setTargetLang(val); addRecentTgt(val); }}
+                containerRef={langBarRef}
+                placeholder="Search for target language"
+                ariaLabel={`Target language: ${targetLang}. Click to search more`}
+                dropdownOnly={!isMobile}
+              />
+              {/* Desktop: recent language pills */}
+              {!isMobile && (
+                <ToggleButtonGroup
+                  exclusive
+                  value={targetLang}
+                  onChange={(_, val) => { if (val) { setTargetLang(val); addRecentTgt(val); } }}
+                  aria-label="Target language"
+                  sx={{ ml: 0.5 }}
+                >
+                  {recentTgtLangs.map(lang => (
+                    <ToggleButton key={lang} value={lang}
+                      aria-label={`Target language: ${lang}`}
+                      sx={{ px: 1.5, py: 0.75, color: targetLang === lang ? '#fff' : 'text.primary' }}>
+                      {lang}
+                    </ToggleButton>
+                  ))}
+                </ToggleButtonGroup>
+              )}
             </Box>
           </Box>
 
 
-          {/* Domain/Tone chipek — csak mobilon, a language bar alatt */}
+          {/* Domain + Tone chip — mobil, language bar alatt */}
           {isMobile && (
-            <Box sx={{ px: 2, pt: 1, pb: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              <Typography variant="caption" color="text.secondary">Domain:</Typography>
-              <Box onClick={openSettings} role="button" tabIndex={0}
-                aria-label={`Domain: ${domain}. Tap to change`}
-                onKeyDown={(e) => e.key === 'Enter' && openSettings()}
-                sx={chipSx}>{domain}</Box>
-              <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>Tone:</Typography>
-              <Box onClick={openSettings} role="button" tabIndex={0}
-                aria-label={`Tone: ${tone}. Tap to change`}
-                onKeyDown={(e) => e.key === 'Enter' && openSettings()}
-                sx={chipSx}>{tone}</Box>
+            <Box sx={{ px: 2, pt: 1, pb: 1.5 }}>
+              <Tooltip title="Domain and tone" arrow>
+                <Box
+                  onClick={openSettings}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Domain and tone settings. Domain: ${domain}, Tone: ${tone}. Tap to change.`}
+                  onKeyDown={(e) => e.key === 'Enter' && openSettings()}
+                  sx={{
+                    display: 'inline-flex', alignItems: 'center', gap: '4px',
+                    cursor: 'pointer', px: '8px', py: '4px',
+                    borderRadius: '4px', bgcolor: blueGray[100],
+                    '&:hover': { bgcolor: blueGray[200] },
+                    '&:focus-visible': { outline: `2px solid ${blue[500]}`, outlineOffset: '2px' },
+                    userSelect: 'none',
+                  }}
+                >
+                  <Typography variant="caption" sx={{ color: blueGray[700], fontWeight: 600, lineHeight: 1.3 }}>
+                    {domain === tone ? domain : `${domain}, ${tone}`}
+                  </Typography>
+                  <KeyboardArrowDownIcon sx={{ fontSize: 14, color: blueGray[500] }} />
+                </Box>
+              </Tooltip>
             </Box>
           )}
 
@@ -701,8 +814,36 @@ export default function App() {
                 transition: 'box-shadow 0.5s',
                 '&:hover': { boxShadow: '0px 10px 20px 0px rgba(0,0,0,0.08)' },
                 display: 'flex', flexDirection: 'column', borderRadius: '4px',
-                minHeight: { xs: 160, sm: 220 },
+                minHeight: { xs: 160, sm: 380 },
               }}>
+                {/* Domain + Tone chip — desktop only, inside panel */}
+                {!isMobile && (
+                  <Box sx={{ px: '16px', pt: '12px', pb: '4px', display: 'flex', alignItems: 'center' }}>
+                    <Tooltip title="Domain and tone" arrow>
+                      <Box
+                        onClick={openSettings}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Domain and tone settings. Domain: ${domain}, Tone: ${tone}. Click to change.`}
+                        onKeyDown={(e) => e.key === 'Enter' && openSettings()}
+                        sx={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          cursor: 'pointer', px: '8px', py: '4px',
+                          borderRadius: '4px', bgcolor: blueGray[100],
+                          '&:hover': { bgcolor: blueGray[200] },
+                          '&:focus-visible': { outline: `2px solid ${blue[500]}`, outlineOffset: '2px' },
+                          userSelect: 'none',
+                        }}
+                      >
+                        <Typography variant="caption" sx={{ color: blueGray[700], fontWeight: 600, lineHeight: 1.3 }}>
+                          {domain === tone ? domain : `${domain}, ${tone}`}
+                        </Typography>
+                        <KeyboardArrowDownIcon sx={{ fontSize: 14, color: blueGray[500] }} />
+                      </Box>
+                    </Tooltip>
+                  </Box>
+                )}
+
                 <textarea
                   ref={taRef}
                   className="fs-ta"
@@ -713,8 +854,10 @@ export default function App() {
                   onChange={(e) => {
                     const v = e.target.value.slice(0, CHAR_LIMIT);
                     setSourceText(v);
-                    e.target.style.height = 'auto';
-                    e.target.style.height = e.target.scrollHeight + 'px';
+                    if (isMobile) {
+                      e.target.style.height = 'auto';
+                      e.target.style.height = e.target.scrollHeight + 'px';
+                    }
                     if (hasResult) { setPhase('idle'); setOfferDismissed(false); }
                   }}
                   style={{
@@ -724,8 +867,9 @@ export default function App() {
                     lineHeight: 1.6, color: 'inherit', backgroundColor: 'transparent',
                     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif',
                     width: '100%', boxSizing: 'border-box',
-                    minHeight: isMobile ? 160 : 280,
-                    height: 'auto', overflow: 'hidden',
+                    minHeight: isMobile ? 160 : 320,
+                    height: isMobile ? 'auto' : undefined,
+                    overflow: isMobile ? 'hidden' : 'auto',
                   }}
                 />
 
@@ -754,16 +898,13 @@ export default function App() {
                 )}
 
                 {/* ── Mobile: char counter + RAG checkbox + Translate — inside panel ── */}
-                {isMobile && (
-                  <>
-                    {/* Spacer — a fixed action bar magasságát kompenzálja */}
-                    <Box sx={{ height: 108 }} />
-                  </>
+                {isMobile && !hasResult && (
+                  <Box sx={{ height: 108 }} />
                 )}
               </Paper>
 
-              {/* ── Mobil fixed action bar — tapad a viewport aljára ── */}
-              {isMobile && (
+              {/* ── Mobil fixed action bar — tapad a viewport aljára, fordítás után eltűnik ── */}
+              {isMobile && !hasResult && (
                 <Box sx={{
                   position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200,
                   bgcolor: 'background.paper',
@@ -897,7 +1038,7 @@ export default function App() {
                 transition: 'box-shadow 0.5s',
                 '&:hover': { boxShadow: '0px 10px 20px 0px rgba(0,0,0,0.08)' },
                 display: 'flex', flexDirection: 'column', borderRadius: '4px',
-                minHeight: { xs: 160, sm: 220 },
+                minHeight: { xs: 160, sm: 380 },
               }}>
                 {isTranslating && (
                   prevTranslation
@@ -1044,7 +1185,9 @@ export default function App() {
                 </Box>
               )}
               <Divider sx={{ my: 2.5 }} />
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>Tone of voice</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
+                Tone of voice
+              </Typography>
               <Select fullWidth size="small" color="secondary" value={tempTone} onChange={e => setTempTone(e.target.value)}
                 inputProps={{ 'aria-label': 'Tone of voice' }} sx={{ borderRadius: '4px' }}>
                 {TONE_OPTIONS.map(opt => <MenuItem key={opt} value={opt}>{opt}</MenuItem>)}
