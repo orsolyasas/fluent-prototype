@@ -756,67 +756,79 @@ export default function App() {
                 {/* ── Mobile: char counter + RAG checkbox + Translate — inside panel ── */}
                 {isMobile && (
                   <>
-                    <Divider />
-                    {/* Row 1: Char counter */}
-                    <Box sx={{ px: 2, pt: 1.25, pb: 0.5 }}>
-                      <Typography variant="caption" role="status" aria-live="polite" aria-atomic="true"
-                        sx={{ color: blueGray[400] }}>
-                        {charsLeft.toLocaleString()} characters left.
-                      </Typography>
-                    </Box>
+                    {/* Spacer — a fixed action bar magasságát kompenzálja */}
+                    <Box sx={{ height: 108 }} />
+                  </>
+                )}
+              </Paper>
 
-                    {/* Row 2: Match company language left + Translate/Cancel right, 32px gap */}
-                    <Box sx={{ px: 2, pb: 2, pt: 0.25, display: 'flex', alignItems: 'center' }}>
-                      <FormControlLabel
-                        control={
-                          <Checkbox size="small" checked={ragEnabled}
-                            onChange={(e) => handleRagCheck(e.target.checked)}
-                            inputProps={{ 'aria-label': 'Match company language' }}
-                            sx={{ color: blueGray[400], p: '4px', '&.Mui-checked': { color: blue[500] } }}
-                          />
-                        }
-                        label={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Typography variant="caption" color="text.primary">Match company language</Typography>
-                            <Tooltip title="It's checking your glossaries and internal reference files to keep translations consistent. It can add 3-5 seconds to processing time." arrow>
-                              <Box component="span" sx={{ cursor: 'help', display: 'flex', alignItems: 'center' }}>
-                                <DsInfoIcon size={14} sx={{ color: blueGray[400] }} />
-                              </Box>
-                            </Tooltip>
-                          </Box>
-                        }
-                        sx={{ m: 0, flex: 1 }}
-                      />
-                      <Box sx={{ width: 32, flexShrink: 0 }} />
-                      {isTranslating
-                        ? <Button variant="outlined" size="large" onClick={handleCancel}
-                            aria-label="Cancel translation"
-                            startIcon={<CircularProgress size={15} thickness={4} sx={{ color: blueGray[600] }} />}
-                            sx={{
-                              borderRadius: 20, fontWeight: 700, flexShrink: 0,
-                              borderColor: blueGray[300], color: blueGray[700],
-                              '&:hover': { borderColor: blueGray[500], bgcolor: blueGray[50] },
-                              '& .MuiButton-startIcon': { mr: '6px' },
-                            }}>
-                            Cancel
-                          </Button>
-                        : <Button variant="contained" size="large"
-                            disabled={!canTranslate} onClick={handleTranslate}
-                            aria-disabled={!canTranslate}
-                            aria-describedby={!canTranslate ? 'translate-hint' : undefined}
-                            sx={{
-                              borderRadius: 20, fontWeight: 700, flexShrink: 0,
-                              bgcolor: '#27336F', color: '#fff',
-                              '&:hover': { bgcolor: '#1F2A5E' },
-                              '&.Mui-disabled': { bgcolor: blueGray[200], color: blueGray[400] },
+              {/* ── Mobil fixed action bar — tapad a viewport aljára ── */}
+              {isMobile && (
+                <Box sx={{
+                  position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200,
+                  bgcolor: 'background.paper',
+                  borderTop: '1px solid', borderColor: 'divider',
+                  pb: 'env(safe-area-inset-bottom)',
+                }}>
+                  {/* Row 1: Char counter */}
+                  <Box sx={{ px: 2, pt: 1.25, pb: 0.5 }}>
+                    <Typography variant="caption" role="status" aria-live="polite" aria-atomic="true"
+                      sx={{ color: blueGray[400] }}>
+                      {charsLeft.toLocaleString()} characters left.
+                    </Typography>
+                  </Box>
+
+                  {/* Row 2: Match company language + Translate/Cancel */}
+                  <Box sx={{ px: 2, pb: 2, pt: 0.25, display: 'flex', alignItems: 'center' }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox size="small" checked={ragEnabled}
+                          onChange={(e) => handleRagCheck(e.target.checked)}
+                          inputProps={{ 'aria-label': 'Match company language' }}
+                          sx={{ color: blueGray[400], p: '4px', '&.Mui-checked': { color: blue[500] } }}
+                        />
+                      }
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Typography variant="caption" color="text.primary">Match company language</Typography>
+                          <Tooltip title="It's checking your glossaries and internal reference files to keep translations consistent. It can add 3-5 seconds to processing time." arrow>
+                            <Box component="span" sx={{ cursor: 'help', display: 'flex', alignItems: 'center' }}>
+                              <DsInfoIcon size={14} sx={{ color: blueGray[400] }} />
+                            </Box>
+                          </Tooltip>
+                        </Box>
+                      }
+                      sx={{ m: 0, flex: 1 }}
+                    />
+                    <Box sx={{ width: 32, flexShrink: 0 }} />
+                    {isTranslating
+                      ? <Button variant="outlined" size="large" onClick={handleCancel}
+                          aria-label="Cancel translation"
+                          startIcon={<CircularProgress size={15} thickness={4} sx={{ color: blueGray[600] }} />}
+                          sx={{
+                            borderRadius: 20, fontWeight: 700, flexShrink: 0,
+                            borderColor: blueGray[300], color: blueGray[700],
+                            '&:hover': { borderColor: blueGray[500], bgcolor: blueGray[50] },
+                            '& .MuiButton-startIcon': { mr: '6px' },
+                          }}>
+                          Cancel
+                        </Button>
+                      : <Button variant="contained" size="large"
+                          disabled={!canTranslate} onClick={handleTranslate}
+                          aria-disabled={!canTranslate}
+                          aria-describedby={!canTranslate ? 'translate-hint' : undefined}
+                          sx={{
+                            borderRadius: 20, fontWeight: 700, flexShrink: 0,
+                            bgcolor: '#27336F', color: '#fff',
+                            '&:hover': { bgcolor: '#1F2A5E' },
+                            '&.Mui-disabled': { bgcolor: blueGray[200], color: blueGray[400] },
                             }}>
                             Translate
                           </Button>
                       }
                     </Box>
-                  </>
+                  </Box>
                 )}
-              </Paper>
 
               {/* ── Desktop action row: RAG checkbox + Translate ── */}
               <Box sx={{ mt: '16px', display: { xs: 'none', sm: 'flex' }, alignItems: 'center' }}>
