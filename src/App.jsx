@@ -696,6 +696,7 @@ export default function App() {
               {!isMobile && (
                 <ToggleButtonGroup
                   exclusive
+                  size="small"
                   value={sourceLang}
                   onChange={(_, val) => { if (val) { setSourceLang(val); addRecentSrc(val); } }}
                   aria-label="Source language"
@@ -704,7 +705,15 @@ export default function App() {
                   {recentSrcLangs.map(lang => (
                     <ToggleButton key={lang} value={lang}
                       aria-label={`Source language: ${lang}`}
-                      sx={{ px: 1.5, py: 0.75, color: sourceLang === lang ? '#fff' : 'text.primary' }}>
+                      sx={{
+                        px: '12px', py: '5px',
+                        fontSize: '0.875rem', fontWeight: sourceLang === lang ? 600 : 400,
+                        color: sourceLang === lang ? '#fff' : 'text.primary',
+                        borderRadius: '25px !important',
+                        '&.Mui-selected': { color: '#fff', bgcolor: blue[500] },
+                        '&.Mui-selected:hover': { bgcolor: blue[600] },
+                        '&:hover': { bgcolor: blueGray[100] },
+                      }}>
                       {lang}
                     </ToggleButton>
                   ))}
@@ -748,6 +757,7 @@ export default function App() {
               {!isMobile && (
                 <ToggleButtonGroup
                   exclusive
+                  size="small"
                   value={targetLang}
                   onChange={(_, val) => { if (val) { setTargetLang(val); addRecentTgt(val); } }}
                   aria-label="Target language"
@@ -756,7 +766,15 @@ export default function App() {
                   {recentTgtLangs.map(lang => (
                     <ToggleButton key={lang} value={lang}
                       aria-label={`Target language: ${lang}`}
-                      sx={{ px: 1.5, py: 0.75, color: targetLang === lang ? '#fff' : 'text.primary' }}>
+                      sx={{
+                        px: '12px', py: '5px',
+                        fontSize: '0.875rem', fontWeight: targetLang === lang ? 600 : 400,
+                        color: targetLang === lang ? '#fff' : 'text.primary',
+                        borderRadius: '25px !important',
+                        '&.Mui-selected': { color: '#fff', bgcolor: blue[500] },
+                        '&.Mui-selected:hover': { bgcolor: blue[600] },
+                        '&:hover': { bgcolor: blueGray[100] },
+                      }}>
                       {lang}
                     </ToggleButton>
                   ))}
@@ -766,33 +784,6 @@ export default function App() {
           </Box>
 
 
-          {/* Domain + Tone chip — mobil, language bar alatt */}
-          {isMobile && (
-            <Box sx={{ px: 2, pt: 1, pb: 1.5 }}>
-              <Tooltip title="Domain and tone" arrow>
-                <Box
-                  onClick={openSettings}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Domain and tone settings. Domain: ${domain}, Tone: ${tone}. Tap to change.`}
-                  onKeyDown={(e) => e.key === 'Enter' && openSettings()}
-                  sx={{
-                    display: 'inline-flex', alignItems: 'center', gap: '4px',
-                    cursor: 'pointer', px: '8px', py: '4px',
-                    borderRadius: '4px', bgcolor: blueGray[100],
-                    '&:hover': { bgcolor: blueGray[200] },
-                    '&:focus-visible': { outline: `2px solid ${blue[500]}`, outlineOffset: '2px' },
-                    userSelect: 'none',
-                  }}
-                >
-                  <Typography variant="caption" sx={{ color: blueGray[700], fontWeight: 600, lineHeight: 1.3 }}>
-                    {domain === tone ? domain : `${domain}, ${tone}`}
-                  </Typography>
-                  <KeyboardArrowDownIcon sx={{ fontSize: 14, color: blueGray[500] }} />
-                </Box>
-              </Tooltip>
-            </Box>
-          )}
 
           {/* ══ Two columns (desktop) / single column (mobile) ═══════════════ */}
           <Box sx={{
@@ -816,9 +807,8 @@ export default function App() {
                 display: 'flex', flexDirection: 'column', borderRadius: '4px',
                 minHeight: { xs: 160, sm: 380 },
               }}>
-                {/* Domain + Tone chip — desktop only, inside panel */}
-                {!isMobile && (
-                  <Box sx={{ px: '16px', pt: '12px', pb: '4px', display: 'flex', alignItems: 'center' }}>
+                {/* Domain + Tone chip — minden méretben belül */}
+                <Box sx={{ px: '16px', pt: '14px', pb: '4px', display: 'flex', alignItems: 'center' }}>
                     <Tooltip title="Domain and tone" arrow>
                       <Box
                         onClick={openSettings}
@@ -842,7 +832,6 @@ export default function App() {
                       </Box>
                     </Tooltip>
                   </Box>
-                )}
 
                 <textarea
                   ref={taRef}
@@ -862,7 +851,7 @@ export default function App() {
                   }}
                   style={{
                     border: 'none', outline: 'none', resize: 'none',
-                    padding: isMobile ? '16px 52px 10px 16px' : '20px 56px 12px 20px',
+                    padding: isMobile ? '10px 52px 10px 16px' : '10px 56px 12px 20px',
                     fontSize: isMobile ? '1rem' : '1.25rem',
                     lineHeight: 1.6, color: 'inherit', backgroundColor: 'transparent',
                     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif',
