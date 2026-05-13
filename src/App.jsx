@@ -512,7 +512,7 @@ export default function App() {
       <style>{`
         textarea.fs-ta::placeholder { color: ${placeholderColor}; }
         textarea.fs-ta:focus { outline: none; }
-        .fluent-source-panel:focus-within { box-shadow: inset 0 0 0 2px ${blue[500]}, 0px 2px 4px 0px rgba(0,0,0,0.08) !important; }
+        .fluent-source-panel:has(textarea:focus) { box-shadow: inset 0 0 0 2px ${blue[500]}, 0px 2px 4px 0px rgba(0,0,0,0.08) !important; }
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
         }
@@ -588,10 +588,13 @@ export default function App() {
           </Toolbar>
         </AppBar>
 
-        {/* ══ Sub-nav — desktop only ═══════════════════════════════════════════ */}
+        {/* ══ Sub-nav — minden breakpointon látható ════════════════════════════ */}
         <Box sx={{
-          display: { xs: 'none', sm: 'block' },
-          position: 'fixed', top: H, left: 0, right: 0, zIndex: 1200,
+          position: { xs: 'relative', sm: 'fixed' },
+          top: { xs: 'unset', sm: H },
+          left: { xs: 'unset', sm: 0 },
+          right: { xs: 'unset', sm: 0 },
+          zIndex: { xs: 'auto', sm: 1200 },
           bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider', height: SN,
         }}>
           <Box sx={{ maxWidth: 1400, mx: 'auto', width: '100%', height: '100%', display: 'flex', alignItems: 'center', px: { xs: 2, sm: 3, md: 4 } }}>
@@ -605,7 +608,8 @@ export default function App() {
               <Tab icon={<DsDocumentUploadIcon size={18} sx={{ color: 'currentColor', mr: 0.75 }} />} iconPosition="start" label="File translation" />
             </Tabs>
             <Box sx={{ flex: 1 }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mr: 1 }}>
+            {/* Domain/Tone chipek — csak desktopon a sub-navban */}
+            <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 0.75, mr: 1 }}>
               <Typography variant="caption" color="text.secondary">Domain:</Typography>
               <Box onClick={openSettings} sx={chipSx}>{domain}</Box>
               <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>Tone:</Typography>
@@ -640,9 +644,10 @@ export default function App() {
             </Box>
           </Box>
 
-          {/* Domain/Tone chips — mobile only */}
+
+          {/* Domain/Tone chipek — csak mobilon, a language bar alatt */}
           {isMobile && (
-            <Box sx={{ px: 2, pb: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Box sx={{ px: 2, pt: 1, pb: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Typography variant="caption" color="text.secondary">Domain:</Typography>
               <Box onClick={openSettings} role="button" tabIndex={0}
                 aria-label={`Domain: ${domain}. Tap to change`}
