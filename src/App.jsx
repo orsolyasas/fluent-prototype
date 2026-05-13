@@ -531,18 +531,6 @@ export default function App() {
               Fluent
             </Typography>
 
-            {/* File translation icon — mobile only */}
-            <Tooltip title="File translation">
-              <IconButton size="small" onClick={() => setMainTab(1)} aria-label="File translation"
-                sx={{
-                  display: { xs: 'inline-flex', sm: 'none' },
-                  color: mainTab === 1 ? '#fff' : 'rgba(255,255,255,0.65)',
-                  '&:hover': { color: '#fff' },
-                }}>
-                <DsDocumentUploadIcon size={19} />
-              </IconButton>
-            </Tooltip>
-
             <Tooltip title={darkMode ? 'Light mode' : 'Dark mode'}>
               <IconButton size="small" onClick={() => setDarkMode(d => !d)}
                 aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -741,11 +729,16 @@ export default function App() {
                 {isMobile && (
                   <>
                     <Divider />
-                    <Box sx={{ px: 2, pt: 1.25, pb: 0.75, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    {/* Row 1: Char counter */}
+                    <Box sx={{ px: 2, pt: 1.25, pb: 0.5 }}>
                       <Typography variant="caption" role="status" aria-live="polite" aria-atomic="true"
-                        sx={{ color: blueGray[400], flex: 1, whiteSpace: 'nowrap' }}>
+                        sx={{ color: blueGray[400] }}>
                         {charsLeft.toLocaleString()} characters left.
                       </Typography>
+                    </Box>
+
+                    {/* Row 2: Match company language left + Translate/Cancel right, 32px gap */}
+                    <Box sx={{ px: 2, pb: 2, pt: 0.25, display: 'flex', alignItems: 'center' }}>
                       <FormControlLabel
                         control={
                           <Checkbox size="small" checked={ragEnabled}
@@ -764,28 +757,27 @@ export default function App() {
                             </Tooltip>
                           </Box>
                         }
-                        sx={{ m: 0 }}
+                        sx={{ m: 0, flex: 1 }}
                       />
-                    </Box>
-                    <Box sx={{ px: 2, pb: 2, pt: 0.5 }}>
+                      <Box sx={{ width: 32, flexShrink: 0 }} />
                       {isTranslating
-                        ? <Button fullWidth variant="outlined" size="large" onClick={handleCancel}
+                        ? <Button variant="outlined" size="large" onClick={handleCancel}
                             aria-label="Cancel translation"
                             startIcon={<CircularProgress size={15} thickness={4} sx={{ color: blueGray[600] }} />}
                             sx={{
-                              borderRadius: 20, fontWeight: 700,
+                              borderRadius: 20, fontWeight: 700, flexShrink: 0,
                               borderColor: blueGray[300], color: blueGray[700],
                               '&:hover': { borderColor: blueGray[500], bgcolor: blueGray[50] },
                               '& .MuiButton-startIcon': { mr: '6px' },
                             }}>
                             Cancel
                           </Button>
-                        : <Button fullWidth variant="contained" size="large"
+                        : <Button variant="contained" size="large"
                             disabled={!canTranslate} onClick={handleTranslate}
                             aria-disabled={!canTranslate}
                             aria-describedby={!canTranslate ? 'translate-hint' : undefined}
                             sx={{
-                              borderRadius: 20, fontWeight: 700,
+                              borderRadius: 20, fontWeight: 700, flexShrink: 0,
                               bgcolor: '#27336F', color: '#fff',
                               '&:hover': { bgcolor: '#1F2A5E' },
                               '&.Mui-disabled': { bgcolor: blueGray[200], color: blueGray[400] },
@@ -865,7 +857,7 @@ export default function App() {
                 transition: 'box-shadow 0.5s',
                 '&:hover': { boxShadow: '0px 10px 20px 0px rgba(0,0,0,0.08)' },
                 display: 'flex', flexDirection: 'column', borderRadius: '4px',
-                minHeight: { xs: 220, sm: 380 },
+                minHeight: { xs: 'unset', sm: 380 },
               }}>
                 {isTranslating && (
                   prevTranslation
