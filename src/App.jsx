@@ -362,35 +362,52 @@ export default function App() {
   const [mainTab, setMainTab] = useState(0);
   const [sourceLang, setSourceLang] = useState('Hungarian');
   const [targetLang, setTargetLang] = useState('English (United States)');
-  const [recentSrcLangs, setRecentSrcLangs] = useState(['Spanish', 'English (Canada)', 'Hungarian']);
-  const [recentTgtLangs, setRecentTgtLangs] = useState(['English (Canada)', 'French (Canada)', 'English (United States)']);
+  const [recentPairs, setRecentPairs] = useState([
+    { src: 'Spanish',           tgt: 'English (United States)' },
+    { src: 'English (Canada)',  tgt: 'Hungarian'               },
+    { src: 'Hungarian',         tgt: 'English (United States)' },
+  ]);
 
-  const addRecentSrc = (lang) => {
-    setRecentSrcLangs(prev => [lang, ...prev.filter(l => l !== lang)].slice(0, 3));
-  };
-  const addRecentTgt = (lang) => {
-    setRecentTgtLangs(prev => [lang, ...prev.filter(l => l !== lang)].slice(0, 3));
+  // Egy pár hozzáadása a recent listához (dedup + max 3)
+  const addRecentPair = (src, tgt) => {
+    setRecentPairs(prev =>
+      [{ src, tgt }, ...prev.filter(p => !(p.src === src && p.tgt === tgt))].slice(0, 3)
+    );
   };
 
-  // Google Translate logika: ütköző nyelvpár esetén swap
+  // Aktuálisan kijelölt pár indexe
+  const selectedPairIdx = recentPairs.findIndex(
+    p => p.src === sourceLang && p.tgt === targetLang
+  );
+
+  // Google Translate logika: pár alapú váltás
+  const handlePairSelect = (idx) => {
+    const pair = recentPairs[idx];
+    if (!pair) return;
+    setSourceLang(pair.src);
+    setTargetLang(pair.tgt);
+  };
+
   const handleSrcLangChange = (val) => {
     if (val === targetLang) {
-      // A régi source kerül a target-re
+      // swap: target kap régi source-t
       setTargetLang(sourceLang);
-      addRecentTgt(sourceLang);
+      addRecentPair(val, sourceLang);
+    } else {
+      addRecentPair(val, targetLang);
     }
     setSourceLang(val);
-    addRecentSrc(val);
   };
 
   const handleTgtLangChange = (val) => {
     if (val === sourceLang) {
-      // A régi target kerül a source-ra
+      // swap: source kap régi target-et
       setSourceLang(targetLang);
-      addRecentSrc(targetLang);
+      addRecentPair(targetLang, val);
+    } else {
+      addRecentPair(sourceLang, val);
     }
     setTargetLang(val);
-    addRecentTgt(val);
   };
   const [domain, setDomain] = useState('Match source');
   const [tone, setTone]     = useState('Match source');
@@ -398,7 +415,8 @@ export default function App() {
   const [sourceText, setSourceText] = useState(SOURCE_TEXT);
   const taRef         = useRef(null);
   const langBarRef    = useRef(null);
-  const targetPanelRef = useRef(null);
+  const targetPanelRef  = useRef(null);
+  const sourcePanelRef  = useRef(null);
 
   const [ragEnabled, setRagEnabled]         = useState(false);
   const [ragDialogShown, setRagDialogShown] = useState(false);
@@ -435,6 +453,22 @@ export default function App() {
       targetPanelRef.current.focus();
     }
   }, [phase, isMobile]);
+
+  // Szinkronizálja a két panel magasságát
+  useEffect(() => {
+    const src = sourcePanelRef.current;
+    const tgt = targetPanelRef.current;
+    if (!src || !tgt) return;
+    // Reset first
+    src.style.minHeight = '';
+    tgt.style.minHeight = '';
+    requestAnimationFrame(() => {
+      if (!src || !tgt) return;
+      const maxH = Math.max(src.offsetHeight, tgt.offsetHeight);
+      src.style.minHeight = maxH + 'px';
+      tgt.style.minHeight = maxH + 'px';
+    });
+  }, [sourceText, phase]);
 
   // Auto-resize textarea — csak mobilon
   useEffect(() => {
@@ -553,8 +587,7 @@ export default function App() {
     const prevTgt = targetLang;
     setSourceLang(prevTgt);
     setTargetLang(prevSrc);
-    addRecentSrc(prevTgt);
-    addRecentTgt(prevSrc);
+    addRecentPair(prevTgt, prevSrc);
   };
 
   const handleClear = () => {
@@ -725,24 +758,24 @@ export default function App() {
                 <ToggleButtonGroup
                   exclusive
                   size="small"
-                  value={sourceLang}
-                  onChange={(_, val) => { if (val) handleSrcLangChange(val); }}
+                  value={selectedPairIdx}
+                  onChange={(_, idx) => { if (idx !== null) handlePairSelect(idx); }}
                   aria-label="Source language"
                   sx={{ mr: 0.5 }}
                 >
-                  {recentSrcLangs.map(lang => (
-                    <ToggleButton key={lang} value={lang}
-                      aria-label={`Source language: ${lang}`}
+                  {recentPairs.map((pair, idx) => (
+                    <ToggleButton key={`src-${idx}`} value={idx}
+                      aria-label={`Language pair: ${pair.src} to ${pair.tgt}`}
                       sx={{
                         px: '12px', py: '5px',
-                        fontSize: '0.875rem', fontWeight: sourceLang === lang ? 600 : 400,
-                        color: sourceLang === lang ? '#fff' : 'text.primary',
+                        fontSize: '0.875rem', fontWeight: selectedPairIdx === idx ? 600 : 400,
+                        color: selectedPairIdx === idx ? '#fff' : 'text.primary',
                         borderRadius: '25px !important',
                         '&.Mui-selected': { color: '#fff', bgcolor: blue[500] },
                         '&.Mui-selected:hover': { bgcolor: blue[600] },
                         '&:hover': { bgcolor: blueGray[100] },
                       }}>
-                      {lang}
+                      {pair.src}
                     </ToggleButton>
                   ))}
                 </ToggleButtonGroup>
@@ -775,7 +808,7 @@ export default function App() {
                 value={isMobile ? targetLang : '▾'}
                 anchor={tgtA} setAnchor={setTgtA}
                 options={TARGET_LANGS}
-                onChange={(val) => { setTargetLang(val); addRecentTgt(val); }}
+                onChange={handleTgtLangChange}
                 containerRef={langBarRef}
                 placeholder="Search for target language"
                 ariaLabel={`Target language: ${targetLang}. Click to search more`}
@@ -786,24 +819,24 @@ export default function App() {
                 <ToggleButtonGroup
                   exclusive
                   size="small"
-                  value={targetLang}
-                  onChange={(_, val) => { if (val) handleTgtLangChange(val); }}
+                  value={selectedPairIdx}
+                  onChange={(_, idx) => { if (idx !== null) handlePairSelect(idx); }}
                   aria-label="Target language"
                   sx={{ ml: 0.5 }}
                 >
-                  {recentTgtLangs.map(lang => (
-                    <ToggleButton key={lang} value={lang}
-                      aria-label={`Target language: ${lang}`}
+                  {recentPairs.map((pair, idx) => (
+                    <ToggleButton key={`tgt-${idx}`} value={idx}
+                      aria-label={`Language pair: ${pair.src} to ${pair.tgt}`}
                       sx={{
                         px: '12px', py: '5px',
-                        fontSize: '0.875rem', fontWeight: targetLang === lang ? 600 : 400,
-                        color: targetLang === lang ? '#fff' : 'text.primary',
+                        fontSize: '0.875rem', fontWeight: selectedPairIdx === idx ? 600 : 400,
+                        color: selectedPairIdx === idx ? '#fff' : 'text.primary',
                         borderRadius: '25px !important',
                         '&.Mui-selected': { color: '#fff', bgcolor: blue[500] },
                         '&.Mui-selected:hover': { bgcolor: blue[600] },
                         '&:hover': { bgcolor: blueGray[100] },
                       }}>
-                      {lang}
+                      {pair.tgt}
                     </ToggleButton>
                   ))}
                 </ToggleButtonGroup>
@@ -820,12 +853,12 @@ export default function App() {
             flexWrap: { xs: 'nowrap', sm: 'wrap' },
             px: { xs: 2, sm: 3, md: 4 },
             pt: 0, pb: 2, gap: 2,
-            alignItems: { xs: 'flex-start', sm: 'stretch' },
+            alignItems: 'flex-start',
           }}>
 
             {/* ── Source column ── */}
             <Box sx={{ flex: { xs: '0 0 auto', sm: '1 1 400px' }, width: { xs: '100%', sm: 'auto' }, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-              <Paper elevation={0} className="fluent-source-panel" sx={{
+              <Paper ref={sourcePanelRef} elevation={0} className="fluent-source-panel" sx={{
                 position: 'relative',
                 border: '0.8px solid rgba(59,55,81,0.18)',
                 bgcolor: '#FAFAFD',
@@ -834,7 +867,6 @@ export default function App() {
                 '&:hover': { boxShadow: '0px 10px 20px 0px rgba(0,0,0,0.08)' },
                 display: 'flex', flexDirection: 'column', borderRadius: '4px',
                 minHeight: { xs: 160, sm: 380 },
-                flex: { xs: 'none', sm: 1 },
               }}>
                 {/* Domain + Tone chip — minden méretben belül */}
                 <Box sx={{ px: '16px', pt: '14px', pb: '4px', display: 'flex', alignItems: 'center' }}>
@@ -951,7 +983,7 @@ export default function App() {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <Typography variant="caption" color="text.primary">Match company language</Typography>
                           <Tooltip title="It's checking your glossaries and internal reference files to keep translations consistent. It can add 3-5 seconds to processing time." arrow>
-                            <Box component="span" sx={{ cursor: 'help', display: 'flex', alignItems: 'center' }}>
+                            <Box component="span" sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                               <DsInfoIcon size={14} sx={{ color: blueGray[400] }} />
                             </Box>
                           </Tooltip>
@@ -1003,7 +1035,7 @@ export default function App() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <Typography variant="body2" color="text.primary">Match company language</Typography>
                       <Tooltip title="It's checking your glossaries and internal reference files to keep translations consistent. It can add 3-5 seconds to processing time." arrow>
-                        <Box component="span" sx={{ cursor: 'help', display: 'flex', alignItems: 'center' }}>
+                        <Box component="span" sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                           <DsInfoIcon size={16} sx={{ color: blueGray[400], '&:hover': { color: blueGray[600] } }} />
                         </Box>
                       </Tooltip>
@@ -1123,9 +1155,9 @@ export default function App() {
                 </Box>
               </Paper>
 
-              {/* Spacer — desktopon kiegyenlíti az action row magasságát */}
+              {/* Spacer — desktopon kiegyenlíti az action row magasságát (mt:16 + h:42 = 58px = action row) */}
               {!isMobile && phase !== 'rag_translating' && !showOffer && !showKeepUsing && (
-                <Box sx={{ mt: '16px', height: 52, flexShrink: 0 }} />
+                <Box sx={{ mt: '16px', height: 42, flexShrink: 0 }} />
               )}
 
               {/* ── RAG progress — desktop: below target panel ── */}
@@ -1154,22 +1186,43 @@ export default function App() {
 
               {/* Keep using banner */}
               {showKeepUsing && (
-                <Box sx={{ mt: '16px', display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 2, bgcolor: blue[50], border: `1px solid ${blue[200]}`, borderRadius: '4px' }}>
-                  <AutoAwesomeIcon sx={{ color: blue[500], fontSize: 18, mt: '2px', flexShrink: 0 }} aria-hidden="true" />
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="body2" color="text.primary" sx={{ fontWeight: 700 }}>Keep future translations consistent with company language?</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
-                      Translations may take a few seconds longer. You can turn off language matching at any time.
-                    </Typography>
+                <Box sx={{ mt: '16px', p: 2, bgcolor: blue[50], border: `1px solid ${blue[200]}`, borderRadius: '4px' }}>
+                  {/* Header sor: ikon + cím */}
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 0.5 }}>
+                    <AutoAwesomeIcon sx={{ color: blue[500], fontSize: 18, mt: '2px', flexShrink: 0 }} aria-hidden="true" />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" color="text.primary" sx={{ fontWeight: 700 }}>
+                        Keep future translations consistent with company language?
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                        Translations may take a few seconds longer. You can turn off language matching at any time.
+                      </Typography>
+                    </Box>
+                    {/* Desktop: gombok jobbra */}
+                    {!isMobile && <>
+                      <Button variant="outlined" size="small" onClick={handleNotNow}
+                        sx={{ borderColor: blueGray[300], color: blueGray[700], whiteSpace: 'nowrap', flexShrink: 0, '&:hover': { borderColor: blueGray[500], bgcolor: blueGray[50] } }}>
+                        Not now
+                      </Button>
+                      <Button variant="contained" size="small" onClick={handleKeepUsing}
+                        sx={{ bgcolor: '#27336F', color: '#fff', whiteSpace: 'nowrap', flexShrink: 0, '&:hover': { bgcolor: '#1F2A5E' } }}>
+                        Yes, keep using
+                      </Button>
+                    </>}
                   </Box>
-                  <Button variant="outlined" size="small" onClick={handleNotNow}
-                    sx={{ borderColor: blueGray[300], color: blueGray[700], whiteSpace: 'nowrap', flexShrink: 0, '&:hover': { borderColor: blueGray[500], bgcolor: blueGray[50] } }}>
-                    Not now
-                  </Button>
-                  <Button variant="contained" size="small" onClick={handleKeepUsing}
-                    sx={{ bgcolor: '#27336F', color: '#fff', whiteSpace: 'nowrap', flexShrink: 0, '&:hover': { bgcolor: '#1F2A5E' } }}>
-                    Yes, keep using
-                  </Button>
+                  {/* Mobile: gombok a szöveg alatt, egymás mellett */}
+                  {isMobile && (
+                    <Box sx={{ display: 'flex', gap: 1, mt: 1.5, pl: '26px' }}>
+                      <Button variant="outlined" size="small" onClick={handleNotNow}
+                        sx={{ borderColor: blueGray[300], color: blueGray[700], '&:hover': { borderColor: blueGray[500], bgcolor: blueGray[50] } }}>
+                        Not now
+                      </Button>
+                      <Button variant="contained" size="small" onClick={handleKeepUsing}
+                        sx={{ bgcolor: '#27336F', color: '#fff', '&:hover': { bgcolor: '#1F2A5E' } }}>
+                        Yes, keep using
+                      </Button>
+                    </Box>
+                  )}
                 </Box>
               )}
             </Box>
