@@ -7,7 +7,7 @@ import {
   Menu, MenuItem, Snackbar, Alert, CircularProgress, LinearProgress, Skeleton, Divider,
   TextField, InputAdornment, Popover, RadioGroup, FormControl, FormLabel, Radio as MuiRadio, FormControlLabel as MuiFormControlLabel, Select, InputLabel,
   ToggleButton, ToggleButtonGroup,
-  Switch,
+  Switch, Slider,
   useMediaQuery,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -29,6 +29,7 @@ import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import SettingsOutlined2Icon from '@mui/icons-material/Settings';
 import QuickreplyOutlinedIcon from '@mui/icons-material/QuickreplyOutlined';
+import TuneIcon from '@mui/icons-material/Tune';
 
 // ── memoQ DS Color Tokens ─────────────────────────────────────────────────────
 const orange   = { 500:'#F47623', 600:'#DD6210', 400:'#FC914A', 100:'#FFF1E8' };
@@ -392,6 +393,24 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(false);
   const theme = makeTheme(darkMode);
   const isMobile = useMediaQuery('(max-width:599.95px)');
+
+  // ── Design tweaks panel ─────────────────────────────────────────────────────
+  const [showTweaks, setShowTweaks]   = useState(false);
+  const [tweaks, setTweaks] = useState({
+    labelText: 'Match company language',  // tweakable label
+    settingsLayout: 'A',      // 'A' chip in panel / 'B' action row (Figma TBD)
+  });
+
+  // Auto-shrink font size based on character count (beta.fluent.memoq.com logika)
+  const getAutoFontSize = (charCount) => {
+    if (charCount <= 50)   return isMobile ? '1rem' : '1.5rem';
+    if (charCount <= 200)  return isMobile ? '1rem' : '1.25rem';
+    if (charCount <= 1000) return isMobile ? '0.9375rem' : '1rem';
+    return isMobile ? '0.875rem' : '0.875rem';
+  };
+
+  // matchLabelSx removed — label text is tweaked directly via tweaks.labelText
+  const setTweak = (key, val) => setTweaks(prev => ({ ...prev, [key]: val }));
 
   const [mainTab, setMainTab] = useState(0);
   const [sourceLang, setSourceLang] = useState('Hungarian');
@@ -902,8 +921,9 @@ export default function App() {
                 display: 'flex', flexDirection: 'column', borderRadius: '4px',
                 minHeight: { xs: 160, sm: 380 },
               }}>
-                {/* Domain + Tone chip — minden méretben belül */}
-                <Box sx={{ px: '16px', pt: '14px', pb: '4px', display: 'flex', alignItems: 'center' }}>
+                {/* Domain + Tone chip — panel fejlécben (inside) vagy action row-ban (below) */}
+                {(isMobile || tweaks.settingsLayout === 'A') && (
+                <Box sx={{ px: '16px', pt: '14px', pb: '4px', display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
                     <Tooltip title="Domain and tone" arrow>
                       <Box
                         onClick={openSettings}
@@ -926,7 +946,9 @@ export default function App() {
                         <KeyboardArrowDownIcon sx={{ fontSize: 14, color: blueGray[500] }} />
                       </Box>
                     </Tooltip>
+
                   </Box>
+                )}
 
                 <textarea
                   ref={taRef}
@@ -947,7 +969,8 @@ export default function App() {
                   style={{
                     border: 'none', outline: 'none', resize: 'none',
                     padding: isMobile ? '10px 52px 10px 16px' : '10px 56px 12px 20px',
-                    fontSize: isMobile ? '1rem' : '1.25rem',
+                    fontSize: getAutoFontSize(sourceText.length),
+                    transition: 'font-size 0.2s ease',
                     lineHeight: 1.6, color: 'inherit', backgroundColor: 'transparent',
                     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif',
                     width: '100%', boxSizing: 'border-box',
@@ -1067,6 +1090,62 @@ export default function App() {
                 )}
 
               {/* ── Desktop action row: RAG checkbox + Translate ── */}
+              {/* L-B: Domain & Tone chip + Match company + Translate in one row */}
+              {!isMobile && tweaks.settingsLayout === 'B' && (
+                <Box sx={{ mt: '16px', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Tooltip title="Domain and tone" arrow>
+                    <Box onClick={openSettings} role="button" tabIndex={0}
+                      aria-label={`Domain and tone settings. Domain: ${domain}, Tone: ${tone}. Click to change.`}
+                      onKeyDown={(e) => e.key === 'Enter' && openSettings()}
+                      sx={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        cursor: 'pointer', px: '8px', py: '4px', borderRadius: '4px', bgcolor: blueGray[100],
+                        '&:hover': { bgcolor: blueGray[200] }, userSelect: 'none',
+                        '&:focus-visible': { outline: `2px solid ${blue[500]}`, outlineOffset: '2px' },
+                      }}>
+                      <Typography variant="caption" sx={{ color: blueGray[700], fontWeight: 600, lineHeight: 1.3 }}>
+                        {domain === tone ? domain : `${domain}, ${tone}`}
+                      </Typography>
+                      <KeyboardArrowDownIcon sx={{ fontSize: 14, color: blueGray[500] }} />
+                    </Box>
+                  </Tooltip>
+                  <FormControlLabel
+                    control={
+                      <Switch checked={ragEnabled}
+                        onChange={(e) => handleRagCheck(e.target.checked)}
+                        color="secondary"
+                        inputProps={{ 'aria-label': 'Match company language' }}
+                      />
+                    }
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Typography variant="body2" color="text.primary">{tweaks.labelText}</Typography>
+                        <Tooltip title="It's checking your glossaries and internal reference files to keep translations consistent. It can add 3-5 seconds to processing time." arrow>
+                          <Box component="span" sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                            <DsInfoIcon size={14} sx={{ color: blueGray[400] }} />
+                          </Box>
+                        </Tooltip>
+                      </Box>
+                    }
+                    sx={{ m: 0, flex: 1 }}
+                  />
+                  <Box sx={{ flex: 1 }} />
+                  {isTranslating
+                    ? <Button variant="outlined" size="large" onClick={handleCancel}
+                        aria-label="Cancel translation"
+                        startIcon={<CircularProgress size={15} thickness={4} sx={{ color: blueGray[600] }} />}
+                        sx={{ borderRadius: 20, px: 3, fontWeight: 700, borderColor: blueGray[300], color: blueGray[700], '&:hover': { borderColor: blueGray[500], bgcolor: blueGray[50] }, '& .MuiButton-startIcon': { mr: '6px' } }}>
+                        Cancel
+                      </Button>
+                    : <Button variant="contained" size="large" disabled={!canTranslate} onClick={handleTranslate}
+                        aria-disabled={!canTranslate}
+                        sx={{ borderRadius: 20, px: 3, fontWeight: 700, bgcolor: '#27336F', color: '#fff', '&:hover': { bgcolor: '#1F2A5E' }, '&.Mui-disabled': { bgcolor: blueGray[200], color: blueGray[400] } }}>
+                        Translate
+                      </Button>
+                  }
+                </Box>
+              )}
+              {(tweaks.settingsLayout === 'A') && (
               <Box sx={{ mt: '16px', display: { xs: 'none', sm: 'flex' }, alignItems: 'center' }}>
                 <FormControlLabel
                   control={
@@ -1078,7 +1157,7 @@ export default function App() {
                   }
                   label={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Typography variant="body2" color="text.primary">Match company language</Typography>
+                      <Typography variant="body2" color="text.primary">{tweaks.labelText}</Typography>
                       <Tooltip title="It's checking your glossaries and internal reference files to keep translations consistent. It can add 3-5 seconds to processing time." arrow>
                         <Box component="span" sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                           <DsInfoIcon size={16} sx={{ color: blueGray[400], '&:hover': { color: blueGray[600] } }} />
@@ -1114,6 +1193,9 @@ export default function App() {
                     </Button>
                 }
               </Box>
+              )} {/* end L-A */}
+
+
 
               {/* ── RAG progress — mobile: between panels ── */}
               {phase === 'rag_translating' && isMobile && (
@@ -1146,13 +1228,13 @@ export default function App() {
                 {isTranslating && (
                   prevTranslation
                     ? <Box sx={{ flex: 1, p: { xs: '16px', sm: '20px' }, pb: 1, opacity: 0.35 }}>
-                        <Typography variant="body1" sx={{ color: 'text.primary', lineHeight: 1.6, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                        <Typography variant="body1" sx={{ color: 'text.primary', lineHeight: 1.6, fontSize: getAutoFontSize(prevTranslation.length), transition: 'font-size 0.2s ease' }}>
                           {prevTranslation}
                         </Typography>
                       </Box>
                     : <Box sx={{ flex: 1, p: { xs: '16px', sm: '20px' } }}>
-                        <Skeleton variant="text" width="92%" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, mb: 1, borderRadius: '4px', bgcolor: blueGray[200] }} />
-                        <Skeleton variant="text" width="75%" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, mb: 1, borderRadius: '4px', bgcolor: blueGray[200] }} />
+                        <Skeleton variant="text" width="92%" sx={{ fontSize: getAutoFontSize(sourceText.length), mb: 1, borderRadius: '4px', bgcolor: blueGray[200] }} />
+                        <Skeleton variant="text" width="75%" sx={{ fontSize: getAutoFontSize(sourceText.length), mb: 1, borderRadius: '4px', bgcolor: blueGray[200] }} />
                         <Skeleton variant="text" width="60%" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, borderRadius: '4px', bgcolor: blueGray[200] }} />
                       </Box>
                 )}
@@ -1160,7 +1242,7 @@ export default function App() {
                 {hasResult && (
                   <Box aria-live="polite" aria-atomic="false"
                     sx={{ p: { xs: '16px', sm: '20px' }, pb: 1 }}>
-                    <Typography variant="body1" sx={{ color: 'text.primary', lineHeight: 1.6, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                    <Typography variant="body1" sx={{ color: 'text.primary', lineHeight: 1.6, fontSize: getAutoFontSize(translation.length), transition: 'font-size 0.2s ease' }}>
                       {translation}
                     </Typography>
                   </Box>
@@ -1377,6 +1459,114 @@ export default function App() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* ══ Design Tweaks Panel ══════════════════════════════════════════════ */}
+        <Box sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999 }}>
+          {showTweaks && (
+            <Paper elevation={4} sx={{
+              position: 'absolute', bottom: 52, right: 0,
+              width: 300, borderRadius: '8px', overflow: 'hidden',
+              border: `1px solid ${blueGray[200]}`,
+              boxShadow: '0px 8px 32px rgba(0,0,0,0.14)',
+            }}>
+              {/* Header */}
+              <Box sx={{ px: 2.5, py: 1.5, bgcolor: '#27336F', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <TuneIcon sx={{ color: '#fff', fontSize: 16 }} />
+                  <Typography variant="caption" sx={{ color: '#fff', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', fontSize: '0.6875rem' }}>
+                    Design Tweaks
+                  </Typography>
+                </Box>
+                <IconButton size="small" onClick={() => setShowTweaks(false)} sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: '#fff' } }}>
+                  <CloseIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Box>
+
+              <Box sx={{ px: 2.5, py: 2, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+
+                {/* Label text variants */}
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: blueGray[600], textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.6875rem', display: 'block', mb: 1.5 }}>
+                    Toggle label text
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    {[
+                      'Match company language',
+                      'Match company style',
+                      'Use company style',
+                      'Apply company style',
+                      'Apply brand style',
+                    ].map((text) => (
+                      <Box key={text} onClick={() => setTweak('labelText', text)}
+                        sx={{
+                          px: 1.5, py: 1, borderRadius: '4px', cursor: 'pointer',
+                          border: '1px solid',
+                          borderColor: tweaks.labelText === text ? blue[500] : blueGray[200],
+                          bgcolor: tweaks.labelText === text ? blue[50] : 'background.paper',
+                          display: 'flex', alignItems: 'center', gap: 1,
+                          transition: 'all 0.15s',
+                          '&:hover': { borderColor: blue[400], bgcolor: blue[50] },
+                        }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, bgcolor: tweaks.labelText === text ? blue[500] : blueGray[300] }} />
+                        <Typography variant="caption" sx={{ color: tweaks.labelText === text ? blue[700] : 'text.primary', fontWeight: tweaks.labelText === text ? 600 : 400 }}>
+                          {text}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+
+                </Box>
+
+                {/* Layout variants */}
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: blueGray[600], textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.6875rem', display: 'block', mb: 1.5 }}>
+                    Domain settings placement hypothesis
+                  </Typography>
+                  <ToggleButtonGroup exclusive size="small" value={tweaks.settingsLayout}
+                    onChange={(_, v) => v && setTweak('settingsLayout', v)}
+                    sx={{ width: '100%', flexWrap: 'wrap', gap: 0.5 }}>
+                    {[
+                      { value: 'A', label: 'Per-translation', desc: 'Domain settings always visible in panel' },
+                      { value: 'B', label: 'Session preference', desc: 'Domain settings less prominent (Figma TBD)' },
+
+                    ].map(({ value, label, desc }) => (
+                      <ToggleButton key={value} value={value} sx={{
+                        flex: 1, minWidth: '70px', flexDirection: 'column', py: '6px', px: 1,
+                        fontSize: '0.6875rem', lineHeight: 1.3, fontWeight: 400,
+                        '&.Mui-selected': { color: '#fff', bgcolor: blue[500] },
+                        '&.Mui-selected:hover': { bgcolor: blue[600] },
+                      }}>
+                        <span style={{ fontWeight: 700 }}>{label}</span>
+                        <span style={{ opacity: 0.7, fontSize: '0.625rem', textWrap: 'balance' }}>{desc}</span>
+                      </ToggleButton>
+                    ))}
+                  </ToggleButtonGroup>
+                </Box>
+
+                {/* Reset */}
+                <Button variant="text" size="small" onClick={() => setTweaks({ labelText: 'Match company language', settingsLayout: 'A' })}
+                  sx={{ color: blueGray[500], fontSize: '0.75rem', textTransform: 'none', alignSelf: 'flex-start', p: 0, '&:hover': { bgcolor: 'transparent', color: blueGray[700] } }}>
+                  Reset to defaults
+                </Button>
+
+              </Box>
+            </Paper>
+          )}
+
+          <Tooltip title={showTweaks ? 'Close tweaks' : 'Design tweaks'} placement="left">
+            <Box onClick={() => setShowTweaks(t => !t)} sx={{
+              width: 44, height: 44, borderRadius: '50%',
+              bgcolor: showTweaks ? blueGray[700] : '#27336F',
+              color: '#fff', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0px 4px 12px rgba(0,0,0,0.2)',
+              transition: 'background 0.15s, transform 0.15s',
+              '&:hover': { bgcolor: showTweaks ? blueGray[800] : '#1F2A5E', transform: 'scale(1.05)' },
+            }}>
+              <TuneIcon sx={{ fontSize: 20 }} />
+            </Box>
+          </Tooltip>
+        </Box>
 
         {/* ══ Snackbar ════════════════════════════════════════════════════════ */}
         <Snackbar
