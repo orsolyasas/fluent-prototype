@@ -7,6 +7,7 @@ import {
   Menu, MenuItem, Snackbar, Alert, CircularProgress, LinearProgress, Skeleton, Divider,
   TextField, InputAdornment, Popover, RadioGroup, FormControl, FormLabel, Radio as MuiRadio, FormControlLabel as MuiFormControlLabel, Select, InputLabel,
   ToggleButton, ToggleButtonGroup,
+  Switch,
   useMediaQuery,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -69,7 +70,7 @@ const SAMPLE_POOL = [
 ];
 
 const SOURCE_TEXT = SAMPLE_POOL[0].source;
-const CHAR_LIMIT  = 50000;
+const CHAR_LIMIT  = 5000;
 const ALL_SOURCE_LANGS = [
   'Autodetect language','Albanian','Albanian (Albania)','Arabic','Bosnian (Cyrillic)','Bosnian (Latin)',
   'Bulgarian','Catalan','Chinese','Chinese (Simplified)','Chinese (Traditional)','Croatian','Czech',
@@ -130,6 +131,39 @@ function makeTheme(dark) {
       MuiAppBar:        { styleOverrides: { root: { boxShadow: 'none' } } },
       MuiChip:          { styleOverrides: { root: { fontWeight: 600 } } },
       MuiMenuItem:      { styleOverrides: { root: { fontSize: '0.875rem' } } },
+      MuiFormControlLabel: {
+        styleOverrides: {
+          label: {
+            fontSize: '0.875rem',
+            lineHeight: 1.4,
+            letterSpacing: '0.15px',
+          },
+          root: {
+            marginLeft: 0,
+            marginRight: 0,
+            gap: '8px',
+          },
+        },
+      },
+      MuiSwitch: {
+        styleOverrides: {
+          root: ({ ownerState }) => ({
+            padding: ownerState.size === 'small' ? 2 : 7,
+          }),
+          thumb: {
+            width: 20, height: 20,
+            backgroundColor: '#fff',
+            borderRadius: '50%',
+          },
+          track: ({ ownerState, theme }) => ({
+            borderRadius: 12, height: '100%', width: '100%',
+            backgroundColor: ownerState.checked ? blue[500] : blueGray[600],
+            opacity: 0.26,
+            [`.MuiSwitch-switchBase.Mui-checked + &`]: { opacity: 1 },
+            [`.MuiSwitch-switchBase.Mui-disabled + &`]: { opacity: 0.12 },
+          }),
+        },
+      },
       MuiToggleButtonGroup: {
         styleOverrides: {
           root: { padding: 0, backgroundColor: 'transparent', border: 'none' },
@@ -615,7 +649,7 @@ export default function App() {
   const isSpeedResult = phase === 'result_speed';
   const isRagResult   = phase === 'result_rag_first' || phase === 'result_rag';
   const hasResult     = isSpeedResult || isRagResult;
-  const canTranslate  = sourceText.trim().length > 0 && !isTranslating;
+  const canTranslate  = sourceText.trim().length > 0 && !isTranslating && charsLeft >= 0;
   const showOffer     = isSpeedResult && !ragEnabled && !ragEverTried;
   const showKeepUsing = phase === 'result_rag_first' && ragTrialMode;
   const translation = isRagResult ? generatedTranslation.rag : generatedTranslation.speed;
@@ -902,7 +936,7 @@ export default function App() {
                   aria-label="Source text"
                   aria-describedby={!canTranslate ? 'translate-hint' : undefined}
                   onChange={(e) => {
-                    const v = e.target.value.slice(0, CHAR_LIMIT);
+                    const v = e.target.value;
                     setSourceText(v);
                     if (isMobile) {
                       e.target.style.height = 'auto';
@@ -942,8 +976,14 @@ export default function App() {
                 {/* ── Desktop: char counter ── */}
                 {!isMobile && (
                   <Typography variant="caption" role="status" aria-live="polite" aria-atomic="true"
-                    sx={{ px: '20px', pb: '14px', pt: '6px', color: blueGray[400], display: 'block', flexShrink: 0 }}>
-                    {charsLeft.toLocaleString()} characters left.
+                    sx={{
+                      px: '20px', pb: '14px', pt: '6px', display: 'block', flexShrink: 0,
+                      color: charsLeft < 0 ? 'error.main' : charsLeft < 10 ? 'warning.main' : blueGray[400],
+                      fontWeight: charsLeft < 10 ? 600 : 400,
+                    }}>
+                    {charsLeft < 0
+                      ? <>Your text is too long. Delete {(-charsLeft).toLocaleString()} character{-charsLeft === 1 ? '' : 's'}.</>
+                      : `${charsLeft.toLocaleString()} characters left.`}
                   </Typography>
                 )}
 
@@ -964,8 +1004,13 @@ export default function App() {
                   {/* Row 1: Char counter */}
                   <Box sx={{ px: 2, pt: 1.25, pb: 0.5 }}>
                     <Typography variant="caption" role="status" aria-live="polite" aria-atomic="true"
-                      sx={{ color: blueGray[400] }}>
-                      {charsLeft.toLocaleString()} characters left.
+                      sx={{
+                        color: charsLeft < 0 ? 'error.main' : charsLeft < 10 ? 'warning.main' : blueGray[400],
+                        fontWeight: charsLeft < 10 ? 600 : 400,
+                      }}>
+                      {charsLeft < 0
+                        ? <>Your text is too long. Delete {(-charsLeft).toLocaleString()} character{-charsLeft === 1 ? '' : 's'}.</>
+                        : `${charsLeft.toLocaleString()} characters left.`}
                     </Typography>
                   </Box>
 
@@ -973,10 +1018,10 @@ export default function App() {
                   <Box sx={{ px: 2, pb: 2, pt: 0.25, display: 'flex', alignItems: 'center' }}>
                     <FormControlLabel
                       control={
-                        <Checkbox size="small" checked={ragEnabled}
+                        <Switch checked={ragEnabled}
                           onChange={(e) => handleRagCheck(e.target.checked)}
+                          color="secondary"
                           inputProps={{ 'aria-label': 'Match company language' }}
-                          sx={{ color: blueGray[400], p: '4px', '&.Mui-checked': { color: blue[500] } }}
                         />
                       }
                       label={
@@ -989,7 +1034,7 @@ export default function App() {
                           </Tooltip>
                         </Box>
                       }
-                      sx={{ m: 0, flex: 1 }}
+                      sx={{ flex: 1 }}
                     />
                     <Box sx={{ width: 32, flexShrink: 0 }} />
                     {isTranslating
@@ -1025,10 +1070,10 @@ export default function App() {
               <Box sx={{ mt: '16px', display: { xs: 'none', sm: 'flex' }, alignItems: 'center' }}>
                 <FormControlLabel
                   control={
-                    <Checkbox size="small" checked={ragEnabled}
+                    <Switch checked={ragEnabled}
                       onChange={(e) => handleRagCheck(e.target.checked)}
+                      color="secondary"
                       inputProps={{ 'aria-label': 'Match company language' }}
-                      sx={{ color: blueGray[400], p: '4px', '&.Mui-checked': { color: blue[500] } }}
                     />
                   }
                   label={
